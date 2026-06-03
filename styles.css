@@ -446,16 +446,6 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 
 /* Download CTA block under the "in Action" video — mirrors the hero offer */
-.how-download {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  /* extra breathing room below the video (adds to the section's space-10 gap) */
-  margin-top: var(--space-12);
-}
-.how-download .launch-offer { margin: 0; }
-.how-download .download-actions { margin-top: 0; }
 
 .section-title {
   font-family: var(--font-display);
