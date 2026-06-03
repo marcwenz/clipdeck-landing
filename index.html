@@ -69,7 +69,7 @@
           </svg>
           <span class="download-text">Download for Mac</span>
         </a>
-        <a class="download-btn" href="#" aria-label="Download Clip Deck for Windows (beta)">
+        <a class="download-btn" href="https://github.com/marcwenz/clipdeck-landing/releases/latest/download/ClipDeck-win.exe" download="ClipDeck-win.exe" aria-label="Download Clip Deck for Windows (beta)" data-win-trigger>
           <svg class="download-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
             <path d="M0 3.449 9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.351"/>
           </svg>
@@ -571,6 +571,48 @@
       </nav>
     </div>
   </footer>
+
+  <!-- ===== Windows (beta) install-guide modal =====
+       Fires when any [data-win-trigger] link is clicked. JS intercepts and shows
+       this dialog so the user is prepared for the SmartScreen warning before
+       the .exe lands. The inline anchor inside is the actual download link —
+       if JS fails to load, clicking the hero Windows button just downloads
+       directly (graceful fallback). -->
+  <div class="win-modal" id="win-modal" role="dialog" aria-modal="true" aria-labelledby="win-modal-title" hidden>
+    <div class="win-modal__backdrop" data-win-close aria-hidden="true"></div>
+    <div class="win-modal__panel" role="document">
+      <button class="win-modal__close" type="button" aria-label="Close install guide" data-win-close>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+
+      <div class="win-modal__head">
+        <span class="win-modal__badge">BETA</span>
+        <h2 id="win-modal-title" class="win-modal__title">Heads up — Windows is in <span class="accent">beta</span></h2>
+      </div>
+
+      <p class="win-modal__intro">The installer isn't yet code-signed, so Windows will show a "Windows protected your PC" warning when you run it. That's expected — here's how to get past it:</p>
+
+      <figure class="win-modal__figure">
+        <img src="assets/win-smartscreen-guide.png" alt="Windows SmartScreen warning dialog with a red arrow pointing at the 'More info' link" width="534" height="500" loading="lazy">
+      </figure>
+
+      <ol class="win-modal__steps">
+        <li>When the SmartScreen warning appears, click <strong>More info</strong>.</li>
+        <li>A <strong>Run anyway</strong> button will appear — click it to install.</li>
+        <li>If the warning closed or you clicked <strong>Don't run</strong>, just open the installer again and repeat.</li>
+      </ol>
+
+      <div class="win-modal__actions">
+        <a class="download-btn win-modal__download" href="https://github.com/marcwenz/clipdeck-landing/releases/latest/download/ClipDeck-win.exe" download="ClipDeck-win.exe" data-win-confirm aria-label="Continue and download Clip Deck for Windows (beta)">
+          <svg class="download-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+            <path d="M0 3.449 9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.351"/>
+          </svg>
+          <span class="download-text">Download for Windows (beta)</span>
+        </a>
+        <button class="win-modal__cancel" type="button" data-win-close>Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js" defer></script>
 </body>

@@ -98,3 +98,66 @@ trackPageView();
   frame.addEventListener("load", hookPanel);
   hookPanel();
 })();
+
+// ----- Windows (beta) install-guide modal --------------------
+// The Windows .exe isn't code-signed yet, so SmartScreen throws a "Windows
+// protected your PC" warning on first run. To set expectations, any link with
+// [data-win-trigger] opens a branded modal that walks the user through
+// "More info → Run anyway" before the download fires.
+//
+// The hero Windows button is still a real download anchor pointing at the
+// GitHub Release URL, so if this script fails to load the click just starts
+// the download directly (progressive enhancement — no broken state).
+(function windowsBetaModal() {
+  const modal = document.getElementById("win-modal");
+  const triggers = document.querySelectorAll("[data-win-trigger]");
+  if (!modal || !triggers.length) return;
+
+  let lastFocus = null;
+
+  function open(triggerEl) {
+    lastFocus = triggerEl;
+    modal.hidden = false;
+    document.body.classList.add("win-modal-open");
+    // Hand focus to the first interactive element inside the panel so keyboard
+    // users land somewhere sensible. We pick the panel itself first so screen
+    // readers announce the dialog before reading the trigger button label.
+    const focusables = modal.querySelectorAll(
+      'button, [href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusables.length) focusables[0].focus();
+    document.addEventListener("keydown", onKeydown);
+  }
+
+  function close() {
+    modal.hidden = true;
+    document.body.classList.remove("win-modal-open");
+    document.removeEventListener("keydown", onKeydown);
+    if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
+  }
+
+  function onKeydown(e) {
+    if (e.key === "Escape") { e.preventDefault(); close(); }
+  }
+
+  triggers.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      open(btn);
+    });
+  });
+
+  // Close on backdrop / X / Cancel — anything tagged [data-win-close].
+  modal.addEventListener("click", (e) => {
+    if (e.target.closest("[data-win-close]")) close();
+  });
+
+  // Confirm button is the real download link; let the browser handle the
+  // navigation, then quietly close the modal a beat later.
+  const confirmBtn = modal.querySelector("[data-win-confirm]");
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", () => {
+      setTimeout(close, 250);
+    });
+  }
+})();
