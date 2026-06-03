@@ -1,0 +1,6002 @@
+/* Clip Deck — floating asset panel */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: #07080B;
+  color: #E7E9EE;
+  font: 13px/1.35 "Inter", "SF Pro Text", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+input { font: inherit; color: inherit; }
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font: 500 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-text);
+  background: rgba(255,255,255,.06);
+  border: .5px solid rgba(255,255,255,.10);
+  border-bottom-color: rgba(255,255,255,.04);
+  border-radius: 4px;
+  letter-spacing: .02em;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+.cd-stage {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(77,163,255,.05), transparent 60%),
+    radial-gradient(60% 50% at 90% 100%, rgba(169,139,255,.04), transparent 60%),
+    #07080B;
+  padding: 28px;
+  overflow: hidden;
+}
+.cd-bezel {
+  position: relative;
+  border-radius: 16px;
+  padding: 1px;
+  background: transparent;
+  box-shadow:
+    0 40px 90px -20px rgba(0,0,0,.7),
+    0 18px 40px -12px rgba(0,0,0,.55);
+}
+
+.cd-panel {
+  position: relative;
+  width: 1320px;
+  height: 700px;
+  display: grid;
+  grid-template-columns: 184px 1fr;
+  border-radius: 15px;
+  background: var(--cd-bg);
+  color: var(--cd-text);
+  overflow: hidden;
+  isolation: isolate;
+}
+.cd-panel[data-density="regular"] { /* hooks for future spacing changes */ }
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.cd-side {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--cd-line);
+  background: linear-gradient(180deg, var(--cd-panel) 0%, var(--cd-bg) 100%);
+  padding: 14px 10px 10px;
+  gap: 10px;
+  min-height: 0;
+}
+.cd-side .cd-search { margin: 0 2px; }
+.cd-side-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 10px;
+  border-bottom: 1px solid var(--cd-line);
+  position: relative;
+}
+
+/* Tiny preferences gear — absolutely positioned in the lower-right of the
+   brand row so it doesn't disturb the title/icon flex layout. ~12px icon,
+   dim by default, accent on hover. Click toggles the Preferences popover. */
+.cd-prefs-trigger {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 18px; height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--cd-dim);
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .12s, color .12s, background .12s;
+}
+.cd-prefs-trigger:hover { opacity: 1; color: var(--cd-text); background: rgba(255,255,255,.05); }
+.cd-prefs-trigger:focus, .cd-prefs-trigger:focus-visible { outline: 0; }
+.cd-prefs-trigger-ico { width: 12px; height: 12px; }
+
+/* Preferences modal — full-window scrim (reuses .cd-paywall-scrim) plus
+   a centered dialog. Matches the Paywall's visual language so the two
+   feel like the same family of overlays. */
+.cd-prefs-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 48px));
+  z-index: 41;
+  padding: 26px 26px 22px;
+  border-radius: 14px;
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,.7);
+  animation: cd-paywall-rise .18s cubic-bezier(.2,.7,.3,1.05);
+}
+/* Top-right cluster on the Preferences modal — holds the PRO/FREE
+   badge plus a "Watch Demo Tutorial" shortcut so users can re-open
+   the onboarding tutorial later. */
+.cd-prefs-badge-wrap {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.cd-prefs-tutorial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: .5px solid rgba(0, 255, 149, .35);
+  border-radius: 999px;
+  background: rgba(10, 12, 18, .92);
+  color: #00ff95;
+  font: 600 11px/1 -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, transform .12s, box-shadow .12s;
+  box-shadow: 0 6px 18px -8px rgba(0, 255, 149, .40);
+}
+.cd-prefs-tutorial-btn:hover {
+  background: rgba(0, 255, 149, .10);
+  border-color: rgba(0, 255, 149, .55);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -8px rgba(0, 255, 149, .55);
+}
+.cd-prefs-tutorial-btn:active { transform: translateY(0); }
+.cd-prefs-tutorial-btn svg { display: block; }
+
+/* ── VFX Engine view ────────────────────────────────────────────────
+   Renders inside `.cd-content` when the user clicks "VFX Engine" in
+   INTHEZONE Tools. Two-column layout: inputs on the left, generation
+   history on the right. Cyan→blue→black radial gradient background.
+   No top bar — users leave by clicking a library/deck in the sidebar
+   (App resets mainView to "slots" on those interactions). */
+.cd-vfx-view {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  /* Radial cyan→blue→black gradient. Two stacked radials for depth:
+     a bright cyan core upper-left, a softer blue glow lower-right,
+     fading into pure black. */
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 15%, rgba(0, 200, 255, 0.32), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 85%, rgba(40, 90, 200, 0.28), transparent 60%),
+    #000;
+  overflow: hidden;
+}
+/* Scrim shown ONLY over the left column when a preset picker is
+   open. Sits inside .cd-vfx-left so the right column / outputs
+   remain fully visible. */
+.cd-vfx-section-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 8, 24, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  z-index: 4;
+  border-radius: 8px;
+}
+
+.cd-vfx-layout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  padding: 28px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── LEFT column (inputs) ───────────────────────────────────────── */
+/* Left column doesn't scroll itself — its inner .cd-vfx-left-scroll
+   child does. This makes .cd-vfx-left a stable positioning context
+   for the scrim + grid modal (they sit fixed within the column
+   bounds while the inputs scroll beneath if needed). */
+.cd-vfx-left {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.cd-vfx-left-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.cd-vfx-title {
+  font: 700 22px/1.1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -.01em;
+}
+.cd-vfx-tagline {
+  font: 400 12.5px/1.4 -apple-system, "Inter", sans-serif;
+  color: rgba(255,255,255,.62);
+  margin: 0 0 4px;
+}
+.cd-vfx-section { display: flex; flex-direction: column; gap: 8px; }
+.cd-vfx-section-h {
+  font: 600 10.5px/1 -apple-system, "Inter", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,.50);
+}
+
+/* Source row — two side-by-side buttons (capture + import). */
+.cd-vfx-source-buttons {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.cd-vfx-source-capture {
+  padding: 12px 14px;
+  border: 1px dashed rgba(120, 200, 255, .40);
+  border-radius: 10px;
+  background: rgba(0, 80, 140, .14);
+  color: rgba(180, 220, 255, .92);
+  font: 600 13px/1.2 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  transition: border-color .14s, background .14s, color .14s;
+}
+.cd-vfx-source-capture:hover {
+  border-color: rgba(140, 220, 255, .80);
+  background: rgba(0, 110, 180, .22);
+  color: #fff;
+}
+.cd-vfx-source-capture:disabled { opacity: .5; cursor: default; }
+.cd-vfx-source-import {
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.72);
+  font: 500 12px/1.2 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .14s, background .14s, color .14s;
+}
+.cd-vfx-source-import:hover {
+  border-color: rgba(255,255,255,.30);
+  background: rgba(255,255,255,.07);
+  color: #fff;
+}
+.cd-vfx-source-import:disabled { opacity: .5; cursor: default; }
+
+/* Captured / imported source preview row. */
+.cd-vfx-source-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid rgba(120, 200, 255, .25);
+  border-radius: 10px;
+  background: rgba(0, 60, 110, .18);
+}
+.cd-vfx-source-thumb {
+  width: 48px; height: 48px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(40,120,180,.55), rgba(10,30,60,.85));
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.78); font-size: 18px;
+  flex-shrink: 0;
+}
+.cd-vfx-source-meta { flex: 1; min-width: 0; }
+.cd-vfx-source-name {
+  font: 600 12.5px/1.2 -apple-system, "Inter", sans-serif;
+  color: #fff;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cd-vfx-source-sub {
+  font: 400 11px/1.3 -apple-system, "Inter", sans-serif;
+  color: rgba(255,255,255,.50);
+  margin-top: 2px;
+}
+.cd-vfx-source-clear {
+  width: 24px; height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.60);
+  font-size: 14px; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.cd-vfx-source-clear:hover { background: rgba(255,255,255,.16); color: #fff; }
+
+/* Three preset triggers side-by-side — each a compact card. Clicking
+   one doesn't show a dropdown anymore; it opens a centered grid
+   modal scoped to the left column (see .cd-vfx-grid-modal below). */
+.cd-vfx-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.cd-vfx-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  background: rgba(0, 30, 60, .35);
+  color: rgba(255,255,255,.85);
+  font: 500 12.5px/1.2 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  transition: border-color .14s, background .14s;
+  text-align: left;
+  width: 100%;
+}
+.cd-vfx-preset:hover { border-color: rgba(140, 220, 255, .50); background: rgba(0, 70, 130, .35); }
+.cd-vfx-preset.open { border-color: rgba(140, 220, 255, .75); background: rgba(0, 80, 150, .45); }
+.cd-vfx-preset-label {
+  color: rgba(255,255,255,.55);
+  font-weight: 500;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.cd-vfx-preset-value {
+  color: #fff;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* Preset grid modal — centered within the left column, sits above the
+   scoped scrim. Shows options as a 3-column grid of icon+label tiles. */
+.cd-vfx-grid-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 24px);
+  max-width: 420px;
+  max-height: calc(100% - 24px);
+  z-index: 5;
+  border-radius: 12px;
+  border: 1px solid rgba(140, 220, 255, .50);
+  background: rgba(8, 22, 44, .98);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, .80);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cd-vfx-modal-rise .16s cubic-bezier(.2, .7, .3, 1.05);
+}
+@keyframes cd-vfx-modal-rise {
+  from { opacity: 0; transform: translate(-50%, -46%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+.cd-vfx-grid-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+.cd-vfx-grid-modal-title {
+  font: 700 14px/1.2 -apple-system, "Inter", sans-serif;
+  color: #fff;
+}
+.cd-vfx-grid-modal-close {
+  width: 26px; height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.70);
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.cd-vfx-grid-modal-close:hover { background: rgba(255,255,255,.16); color: #fff; }
+
+.cd-vfx-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 14px;
+  overflow-y: auto;
+}
+.cd-vfx-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px 8px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  background: rgba(0, 20, 40, .35);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .12s;
+}
+.cd-vfx-tile:hover {
+  border-color: rgba(140, 220, 255, .50);
+  background: rgba(0, 60, 110, .35);
+  transform: translateY(-1px);
+}
+.cd-vfx-tile.selected {
+  border-color: rgba(140, 220, 255, .90);
+  background: rgba(0, 100, 180, .35);
+  box-shadow: 0 0 0 1px rgba(140, 220, 255, .35) inset;
+}
+.cd-vfx-tile:focus, .cd-vfx-tile:focus-visible { outline: 0; }
+.cd-vfx-tile-icon {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 18px/1 -apple-system, "Inter", sans-serif;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+  box-shadow: 0 4px 12px -4px rgba(0,0,0,.5);
+}
+.cd-vfx-tile-label {
+  font: 500 10.5px/1.25 -apple-system, "Inter", sans-serif;
+  color: rgba(255,255,255,.85);
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+/* Prompt textarea. */
+.cd-vfx-prompt {
+  width: 100%;
+  min-height: 88px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0, 20, 40, .35);
+  color: #fff;
+  border-radius: 10px;
+  font: 400 13px/1.45 -apple-system, "Inter", sans-serif;
+  resize: vertical;
+  outline: 0;
+  box-sizing: border-box;
+  transition: border-color .14s, background .14s;
+}
+.cd-vfx-prompt:focus { border-color: rgba(140, 220, 255, .60); background: rgba(0, 30, 60, .45); }
+.cd-vfx-prompt::placeholder { color: rgba(255,255,255,.30); }
+
+/* Generate CTA. */
+.cd-vfx-generate {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 0;
+  background: linear-gradient(135deg, #00e5ff, #0080ff);
+  color: #001f3f;
+  font: 700 13.5px/1 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  box-shadow: 0 6px 24px -6px rgba(0, 200, 255, .55);
+  transition: filter .14s, transform .14s, opacity .14s;
+}
+.cd-vfx-generate:hover { filter: brightness(1.08); }
+.cd-vfx-generate:active { transform: translateY(1px); }
+.cd-vfx-generate:disabled {
+  opacity: .35;
+  cursor: default;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.50);
+  box-shadow: none;
+}
+.cd-vfx-generate-label { font-weight: 700; }
+.cd-vfx-generate-cost { font-weight: 500; font-size: 11.5px; opacity: .80; }
+.cd-vfx-generate-balance { opacity: .75; }
+
+.cd-vfx-error {
+  color: #FFB1B1;
+  background: rgba(255, 80, 80, .10);
+  border: 1px solid rgba(255, 80, 80, .25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+}
+
+/* ── RIGHT column (outputs / generation history) ────────────────── */
+.cd-vfx-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  overflow-y: auto;
+  padding-left: 12px;
+  padding-right: 4px;
+  border-left: 1px solid rgba(255,255,255,.08);
+}
+.cd-vfx-right-h {
+  font: 600 10.5px/1 -apple-system, "Inter", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,.50);
+}
+.cd-vfx-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 16px;
+  border: 1px dashed rgba(255,255,255,.10);
+  border-radius: 12px;
+  color: rgba(255,255,255,.45);
+  text-align: center;
+}
+.cd-vfx-empty-icon { font-size: 28px; color: rgba(140, 220, 255, .50); }
+.cd-vfx-empty-text { font: 400 12px/1.4 -apple-system, "Inter", sans-serif; }
+.cd-vfx-results { display: flex; flex-direction: column; gap: 8px; }
+
+.cd-vfx-result {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  background: rgba(0, 20, 40, .35);
+  transition: border-color .14s, background .14s;
+}
+.cd-vfx-result--generating { border-color: rgba(140, 220, 255, .30); background: rgba(0, 40, 80, .40); }
+.cd-vfx-result--done       { border-color: rgba(140, 220, 255, .50); background: rgba(0, 60, 110, .45); }
+.cd-vfx-result--failed     { border-color: rgba(255, 80, 80, .35); background: rgba(60, 10, 10, .30); }
+.cd-vfx-result-thumb {
+  width: 48px; height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(40,120,180,.55), rgba(10,30,60,.85));
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.78); font-size: 20px; font-weight: 700;
+}
+.cd-vfx-result--done .cd-vfx-result-thumb {
+  background: linear-gradient(135deg, #00e5ff, #0080ff);
+  color: #001f3f;
+}
+.cd-vfx-result--failed .cd-vfx-result-thumb {
+  background: rgba(255, 80, 80, .25);
+  color: #FFB1B1;
+}
+.cd-vfx-result-meta { min-width: 0; }
+.cd-vfx-result-prompt {
+  font: 500 12.5px/1.3 -apple-system, "Inter", sans-serif;
+  color: #fff;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+}
+.cd-vfx-result-status {
+  font: 400 11px/1.3 -apple-system, "Inter", sans-serif;
+  color: rgba(255,255,255,.55);
+  margin-top: 3px;
+}
+.cd-vfx-result--failed .cd-vfx-result-status { color: #FFB1B1; }
+.cd-vfx-result-drop {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 0;
+  background: linear-gradient(135deg, #00e5ff, #0080ff);
+  color: #001f3f;
+  font: 700 11.5px/1 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  transition: filter .12s;
+}
+.cd-vfx-result-drop:hover { filter: brightness(1.08); }
+
+/* Spinner used in the in-flight result-thumb. Reuses the cd-cgfy-spin
+   keyframe defined below so we don't duplicate the animation. */
+.cd-vfx-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,.18);
+  border-top-color: #00e5ff;
+  border-radius: 50%;
+  animation: cd-cgfy-spin 0.9s linear infinite;
+}
+@keyframes cd-cgfy-spin { to { transform: rotate(360deg); } }
+
+/* Action button used in the Preferences settings list — e.g. "Manage
+   devices". Sized to match the existing cd-prefs-hotkey / cd-prefs-select
+   pattern so the row aligns visually with the other rows. */
+.cd-prefs-action {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: .5px solid var(--cd-line2);
+  background: rgba(255,255,255,.03);
+  color: var(--cd-text);
+  font: 500 11.5px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.cd-prefs-action:hover {
+  background: rgba(255,255,255,.06);
+  border-color: var(--cd-accent-glow);
+  color: var(--cd-accent);
+}
+.cd-prefs-action:focus, .cd-prefs-action:focus-visible { outline: 0; }
+/* Toggle (used by the Updates > Auto-check row in Preferences). Custom
+   skin so it matches the rest of the modal instead of the OS default
+   checkbox. */
+.cd-prefs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.cd-prefs-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.cd-prefs-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  border: .5px solid var(--cd-line2);
+  transition: background .14s, border-color .14s;
+}
+.cd-prefs-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cd-dim);
+  transition: transform .14s, background .14s;
+}
+.cd-prefs-toggle input:checked + .cd-prefs-toggle-track {
+  background: rgba(0, 255, 149, .25);
+  border-color: rgba(0, 255, 149, .55);
+}
+.cd-prefs-toggle input:checked + .cd-prefs-toggle-track::after {
+  transform: translateX(16px);
+  background: #00ff95;
+}
+.cd-prefs-toggle-label {
+  font: 500 11.5px/1 -apple-system, "Inter", system-ui, sans-serif;
+  color: var(--cd-text);
+  min-width: 22px;
+}
+/* Wide variant — used when the prefs modal hosts Settings (left) +
+   the welcome graphic (right) side by side. Modal is sized roughly
+   to onboarding-modal proportions so the right-column graphic stays
+   readable; Settings column has a fixed width so increasing the
+   modal only widens the graphic side. */
+.cd-prefs-modal--wide {
+  width: min(1200px, calc(100vw - 48px));
+  padding: 28px 28px 24px;
+}
+.cd-prefs-cols {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 4px;
+}
+.cd-prefs-modal--wide .cd-prefs-cols {
+  flex-direction: row;
+  gap: 20px;
+  align-items: stretch;
+}
+/* Settings column — fixed width so a wider modal grows the graphic
+   side, not the settings list. */
+.cd-prefs-modal--wide .cd-prefs-cols > .cd-prefs-col:first-child {
+  flex: 0 0 440px;
+}
+.cd-prefs-col { display: flex; flex-direction: column; min-width: 0; }
+/* Right-column graphic — takes the remaining width so the welcome
+   illustration is large enough to read alongside the settings list. */
+.cd-prefs-col--art {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.cd-prefs-art {
+  width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.cd-prefs-col-h {
+  font: 600 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--cd-dim);
+  margin: 2px 2px 10px;
+}
+
+/* News & Updates list. Each row: small kind-coded thumbnail + title /
+   subtitle stack + trailing date or CTA. Mock data only — render shape
+   matches the future /news.json feed so we can swap mock for live. */
+.cd-news {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  border: .5px solid var(--cd-line);
+  background: rgba(255,255,255,.025);
+  overflow: hidden;
+}
+.cd-news-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  cursor: default;
+  transition: background .12s;
+}
+.cd-news-item + .cd-news-item { border-top: .5px solid var(--cd-line); }
+.cd-news-item:hover { background: rgba(255,255,255,.04); }
+.cd-news-thumb {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  background: rgba(255,255,255,.06);
+  border: .5px solid var(--cd-line2);
+}
+.cd-news-thumb--update {
+  background: var(--cd-accent-soft);
+  border-color: color-mix(in srgb, var(--cd-accent) 35%, transparent);
+  color: var(--cd-accent);
+}
+.cd-news-thumb--release { background: rgba(255,205,80,.10); border-color: rgba(255,205,80,.30); color: #FFCD50; }
+.cd-news-thumb--tutorial { background: rgba(140,180,255,.10); border-color: rgba(140,180,255,.30); color: #8CB4FF; }
+.cd-news-thumb--news { background: rgba(255,255,255,.05); color: var(--cd-muted); }
+.cd-news-body { flex: 1; min-width: 0; }
+.cd-news-title {
+  font: 500 12.5px/1.25 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cd-news-sub {
+  margin-top: 2px;
+  font: 400 11px/1.3 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cd-news-date {
+  flex-shrink: 0;
+  font: 500 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-dim);
+  letter-spacing: .02em;
+}
+.cd-news-cta {
+  flex-shrink: 0;
+  font: 700 10.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--cd-accent);
+  background: var(--cd-accent-soft);
+  border: .5px solid color-mix(in srgb, var(--cd-accent) 35%, transparent);
+  border-radius: 5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.cd-news-cta:hover { background: color-mix(in srgb, var(--cd-accent) 18%, transparent); }
+.cd-news-cta:focus, .cd-news-cta:focus-visible { outline: 0; }
+.cd-prefs-list {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  border: .5px solid var(--cd-line);
+  background: rgba(255,255,255,.025);
+  /* Intentionally NOT overflow:hidden — would clip the Insert mode
+     dropdown options that pop below the row. */
+}
+.cd-prefs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.cd-prefs-row + .cd-prefs-row { border-top: .5px solid var(--cd-line); }
+/* Right-side container for rows that pack two controls together
+   (e.g. Updates row: auto-check toggle + Check for Updates button). */
+.cd-prefs-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cd-prefs-label {
+  font: 500 12.5px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+}
+.cd-prefs-hotkey {
+  font: 500 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-text);
+  background: rgba(255,255,255,.06);
+  border: .5px solid rgba(255,255,255,.10);
+  border-bottom-color: rgba(255,255,255,.04);
+  border-radius: 4px;
+  padding: 5px 14px;
+  min-width: 44px;
+  text-align: center;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.cd-prefs-hotkey:hover { color: var(--cd-accent); border-color: var(--cd-accent-glow); }
+.cd-prefs-hotkey:focus, .cd-prefs-hotkey:focus-visible { outline: 0; }
+.cd-prefs-hotkey.recording {
+  color: var(--cd-accent);
+  background: var(--cd-accent-soft);
+  border-color: var(--cd-accent);
+  animation: cd-hotkey-pulse 1.4s ease-in-out infinite;
+}
+
+/* Custom dropdown for Insert Options. Implemented as a button + popover
+   instead of a native <select> so opening the picker doesn't steal window
+   focus and trigger the overlay's blur-to-hide. */
+.cd-prefs-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.cd-prefs-select {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 11.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  background: rgba(255,255,255,.05);
+  border: .5px solid rgba(255,255,255,.10);
+  border-radius: 5px;
+  padding: 6px 8px 6px 10px;
+  cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.cd-prefs-select:hover { color: var(--cd-text); border-color: var(--cd-accent-glow); background: rgba(255,255,255,.07); }
+.cd-prefs-select:focus, .cd-prefs-select:focus-visible { outline: 0; border-color: var(--cd-accent-glow); }
+.cd-prefs-select-caret {
+  width: 11px; height: 11px;
+  color: var(--cd-dim);
+  pointer-events: none;
+}
+.cd-prefs-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  z-index: 40;
+  padding: 4px;
+  border-radius: 6px;
+  background: var(--cd-panel2);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 14px 30px -10px rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+}
+.cd-prefs-option {
+  text-align: left;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  font: 500 11.5px/1.1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+  cursor: pointer;
+  transition: background .1s, color .1s;
+}
+.cd-prefs-option:hover { background: rgba(255,255,255,.06); color: var(--cd-text); }
+.cd-prefs-option:focus, .cd-prefs-option:focus-visible { outline: 0; }
+.cd-prefs-option.active { color: var(--cd-accent); background: var(--cd-accent-soft); }
+.cd-brand-mark {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.25) inset, 0 6px 14px -6px rgba(2,255,148,.5);
+}
+.cd-brand-mark svg { display: block; width: 100%; height: 100%; }
+.cd-brand-name { font-weight: 700; letter-spacing: -.015em; font-size: 20px; line-height: 1.1; white-space: nowrap; }
+.cd-brand-sub  { font-size: 9.5px; color: var(--cd-dim); letter-spacing: .08em; text-transform: uppercase; font-weight: 500; margin-top: 1px; white-space: nowrap; }
+
+.cd-side-h {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--cd-dim);
+  padding: 4px 8px 6px;
+}
+
+/* Library list grows to fill the available space between the search
+   bar and the pinned INTHEZONE Tools section. Scrolls internally when
+   the user has more libraries than fit visually. */
+.cd-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* Hide scrollbar until hover — keeps the sidebar visually quiet. */
+  scrollbar-gutter: stable;
+}
+.cd-side-nav::-webkit-scrollbar { width: 6px; }
+.cd-side-nav::-webkit-scrollbar-track { background: transparent; }
+.cd-side-nav::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.10);
+  border-radius: 3px;
+}
+.cd-side-nav:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); }
+.cd-side-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3px 16px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 4px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--cd-muted);
+  text-align: left;
+  transition: background .12s, color .12s;
+}
+.cd-side-item.no-ico {
+  grid-template-columns: 3px 1fr auto;
+}
+.cd-side-item:hover { background: rgba(255,255,255,.03); color: var(--cd-text); }
+.cd-side-item.on    { background: rgba(255,255,255,.04); color: var(--cd-text); }
+.cd-side-item:focus, .cd-side-item:focus-visible { outline: 0; box-shadow: none; }
+/* Library row dwell-to-switch: while a slot drag is in flight and the
+   cursor parks on this row, fill an accent bar along the bottom. After
+   ~700ms the active library switches and the user can drop into a slot. */
+.cd-side-item.dwell-active {
+  background: var(--cd-accent-soft);
+  color: var(--cd-text);
+  position: relative;
+}
+.cd-side-item.dwell-active::after {
+  content: "";
+  position: absolute;
+  left: 4px; right: 4px; bottom: 0;
+  height: 2px;
+  width: 0;
+  background: var(--cd-accent);
+  border-radius: 2px;
+  animation: cd-dwell-fill 700ms linear forwards;
+}
+.cd-side-rail {
+  width: 3px; height: 16px; border-radius: 2px;
+  margin-left: 2px;
+  transition: background .15s;
+}
+.cd-side-ico { width: 16px; height: 16px; flex-shrink: 0; }
+.cd-side-label { font-weight: 500; font-size: 12.5px; }
+/* Library row in locked (Free + extra library) state. Dims the label, parks
+   a small padlock at the right edge, and keeps the row clickable so the
+   onClick handler can route to the paywall. */
+.cd-side-item.locked .cd-side-label { color: var(--cd-dim); }
+.cd-side-item.locked:hover .cd-side-label { color: var(--cd-text); }
+.cd-side-item-lock {
+  margin-left: auto;
+  padding-right: 4px;
+  font-size: 10px;
+  line-height: 1;
+  opacity: .7;
+  flex-shrink: 0;
+}
+
+.cd-side-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 7px;
+  margin-top: 8px;
+  border: .5px dashed var(--cd-line2);
+  background: transparent;
+  border-radius: 7px;
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.cd-side-add:hover { color: var(--cd-text); background: rgba(255,255,255,.03); border-color: var(--cd-line2); }
+.cd-side-add-plus {
+  display: inline-grid; place-items: center;
+  width: 16px; height: 16px;
+  font-size: 14px; line-height: 1;
+  color: var(--cd-dim);
+}
+.cd-side-add:hover .cd-side-add-plus { color: var(--cd-text); }
+
+/* Tools section in the sidebar — pinned at the bottom regardless of
+   how many libraries are above it. The library list (`.cd-side-nav`)
+   takes flex:1 and scrolls internally; this block uses flex-shrink:0
+   so it always renders at its natural height and never gets crowded
+   out. The margin-top:auto is a belt-and-braces for the rare case
+   where `.cd-side-nav` is empty (the auto pushes this to the bottom). */
+.cd-side-tools {
+  margin-top: auto;
+  flex-shrink: 0;
+  padding: 12px 10px 12px;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.005)),
+    rgba(0,0,0,.18);
+  border: .5px solid var(--cd-line);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset;
+}
+.cd-side-tools .cd-side-h {
+  padding: 0 4px 8px;
+  color: var(--cd-muted);
+}
+.cd-side-tool-item {
+  display: grid;
+  grid-template-columns: 3px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 4px;
+  border-radius: 7px;
+  color: var(--cd-text);
+  transition: background .12s, color .12s;
+}
+.cd-side-tool-item:hover {
+  background: rgba(255,255,255,.05);
+}
+.cd-side-tool-item.on {
+  background: rgba(255,255,255,.04);
+  color: var(--cd-text);
+}
+.cd-side-tool-item.on .cd-side-label { color: var(--cd-text); }
+.cd-side-tool-item .cd-side-rail {
+  width: 3px; height: 14px; border-radius: 2px;
+  margin-left: 2px;
+  background: var(--cd-accent);
+}
+.cd-side-tool-item .cd-side-label {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--cd-text);
+  min-width: 0;
+}
+.cd-side-tool-item.locked .cd-side-label { color: var(--cd-dim); }
+.cd-side-tool-item.locked:hover .cd-side-label { color: var(--cd-text); }
+.cd-side-tool-lock {
+  font-size: 10px;
+  line-height: 1;
+  opacity: .7;
+}
+.cd-side-tool-badge {
+  font: 700 8.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--cd-accent);
+  background: var(--cd-accent-soft);
+  border: .5px solid var(--cd-accent-glow);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+/* The tools list now holds two row types side-by-side: clickable
+   .cd-side-tool-item rows for unlocked entries, and .cd-side-locked-item
+   rows for locked entries (Coming Soon hover). */
+.cd-side-tools-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cd-side-locked-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 4px;
+  border-radius: 7px;
+  color: var(--cd-dim);
+  transition: background .12s, color .12s;
+  overflow: hidden;
+}
+.cd-side-locked-item .cd-side-rail {
+  width: 3px; height: 14px; border-radius: 2px;
+  margin-left: 2px;
+}
+.cd-side-locked-item .cd-side-label {
+  font-weight: 500;
+  font-size: 12px;
+  min-width: 0;
+}
+.cd-side-lock {
+  width: 13px; height: 13px;
+  color: var(--cd-dim);
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+/* Per-item hover: the "Coming Soon" pill sits inside the locked row and
+   fades in only when that specific row is hovered. The pill carries its
+   own background + padding so it reads cleanly on top of the row. */
+.cd-side-locked-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+  font-size: 0; /* hide the inline text node — ::before owns the pill */
+}
+.cd-side-locked-overlay::before {
+  content: "Coming Soon";
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  color: var(--cd-accent);
+  background: rgba(0,0,0,.85);
+  border: .5px solid var(--cd-accent-glow);
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px -6px rgba(0,0,0,.55);
+}
+.cd-side-locked-item:hover .cd-side-locked-overlay { opacity: 1; }
+
+.cd-side-tags { padding-top: 6px; border-top: 1px solid var(--cd-line); }
+.cd-tag-cluster { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 4px 4px; }
+.cd-tag-chip {
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: var(--cd-muted);
+  border: .5px solid var(--cd-line2);
+}
+
+.cd-side-foot { margin-top: auto; padding: 8px 6px 4px; }
+.cd-meter-row {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--cd-muted);
+  margin-bottom: 5px;
+}
+.cd-meter-row span:last-child { color: var(--cd-dim); font-variant-numeric: tabular-nums; }
+.cd-meter-bar {
+  height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,.05);
+  overflow: hidden;
+}
+.cd-meter-bar i { display: block; height: 100%; border-radius: 2px; }
+
+/* ── Main column ───────────────────────────────────────────────────────── */
+.cd-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Topbar ────────────────────────────────────────────────────────────── */
+.cd-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--cd-line);
+  background: linear-gradient(180deg, var(--cd-panel), var(--cd-bg));
+}
+.cd-decks {
+  display: flex; align-items: center; gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.cd-adddeck {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border: .5px dashed var(--cd-line2);
+  background: transparent;
+  border-radius: 7px;
+  color: var(--cd-muted);
+  font-size: 11.5px; font-weight: 500;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.cd-adddeck:hover { color: var(--cd-text); background: rgba(255,255,255,.04); }
+.cd-adddeck-plus {
+  display: inline-grid; place-items: center;
+  width: 14px; height: 14px;
+  font-size: 14px; line-height: 1;
+  color: var(--cd-dim);
+}
+.cd-adddeck:hover .cd-adddeck-plus { color: var(--cd-text); }
+.cd-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px 0 30px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border: .5px solid var(--cd-line2);
+  transition: border-color .15s, background .15s;
+}
+.cd-search:focus-within {
+  border-color: var(--cd-accent-glow);
+  background: rgba(255,255,255,.06);
+}
+.cd-search-ico {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px;
+  color: var(--cd-muted);
+}
+.cd-search-input {
+  flex: 1; min-width: 0;
+  border: 0; background: transparent; outline: none;
+  height: 100%;
+  font-size: 12.5px;
+}
+.cd-search-input::placeholder { color: var(--cd-dim); }
+.cd-search-cmd {
+  display: inline-flex; gap: 2px; align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  min-width: 30px;
+  max-width: 78px;
+  background: rgba(255,255,255,.05);
+  color: var(--cd-muted);
+  border: .5px solid var(--cd-line2);
+  border-radius: 5px;
+  font: 500 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.cd-search-cmd:hover {
+  color: var(--cd-accent);
+  border-color: var(--cd-accent-glow);
+}
+.cd-search-cmd:focus, .cd-search-cmd:focus-visible { outline: 0; }
+.cd-search-cmd.recording {
+  color: var(--cd-accent);
+  background: var(--cd-accent-soft);
+  border-color: var(--cd-accent);
+  animation: cd-hotkey-pulse 1.4s ease-in-out infinite;
+}
+.cd-search-cmd span {
+  display: block;
+  line-height: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cd-tagbar {
+  display: flex; align-items: center; gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+.cd-tagbar::-webkit-scrollbar { display: none; }
+.cd-tag {
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: .5px solid transparent;
+  background: transparent;
+  color: var(--cd-muted);
+  font-size: 11.5px; font-weight: 500;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.cd-tag:hover { color: var(--cd-text); background: rgba(255,255,255,.04); }
+.cd-tag.on { color: var(--cd-text); background: rgba(255,255,255,.05); border-color: var(--cd-line2); }
+/* Deck tab dwell-to-switch — same pattern as the sidebar library row.
+   Hovering this tab during a slot drag for ~700 ms switches to that deck. */
+.cd-tag.dwell-active {
+  color: var(--cd-text);
+  background: var(--cd-accent-soft);
+  border-color: var(--cd-accent-glow);
+  position: relative;
+}
+/* Deck tab in locked (Free + extra deck within library 0) state. Inline
+   padlock to the right of the deck name; rest of the tile keeps its hover
+   affordance so clicking still routes to the paywall handler. */
+.cd-tag.locked { color: var(--cd-dim); }
+.cd-tag.locked:hover { color: var(--cd-text); background: rgba(255,255,255,.04); }
+.cd-tag-lock {
+  margin-left: 6px;
+  font-size: 10px;
+  line-height: 1;
+  opacity: .7;
+}
+.cd-tag.dwell-active::after {
+  content: "";
+  position: absolute;
+  left: 6px; right: 6px; bottom: 0;
+  height: 2px;
+  width: 0;
+  background: var(--cd-accent);
+  border-radius: 2px;
+  animation: cd-dwell-fill 700ms linear forwards;
+}
+
+.cd-top-actions { display: flex; align-items: center; gap: 4px; }
+.cd-icobtn {
+  display: inline-grid; place-items: center;
+  width: 28px; height: 28px;
+  border: 0; background: transparent;
+  border-radius: 7px;
+  color: var(--cd-muted);
+  transition: color .12s, background .12s;
+}
+.cd-icobtn:hover { color: var(--cd-text); background: rgba(255,255,255,.05); }
+.cd-icobtn svg { width: 16px; height: 16px; }
+.cd-divider {
+  width: 1px; height: 16px;
+  background: var(--cd-line2);
+  margin: 0 4px;
+  display: inline-block;
+}
+
+/* ── Content (grid area) ──────────────────────────────────────────────── */
+.cd-content {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 1fr;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,.015), transparent 70%),
+    var(--cd-bg);
+}
+
+/* INTHEZONE Tools > Pixabay paywall overlay (free tier).
+   `.cd-pixabay-locked` is the wrapper that holds two stacked layers:
+   the live SfxBrowser blurred + dimmed underneath, and the upgrade
+   card centred on top. The webview behind stays interactive in DOM
+   but pointer-events:none blocks any input from leaking through. */
+.cd-pixabay-locked {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.cd-pixabay-locked-bg {
+  position: absolute;
+  inset: 0;
+  filter: blur(8px) saturate(.6) brightness(.55);
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  display: grid;
+}
+/* Force SfxBrowser to fill the blur layer regardless of its own
+   intrinsic sizing — without this the webview only takes its
+   natural height and the bottom of the panel shows un-blurred. */
+.cd-pixabay-locked-bg > * {
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+.cd-pixabay-paywall {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0;
+  z-index: 10;
+}
+/* The marketing graphic is its own self-contained card.
+   No max-height / no object-fit: contain — they letterbox the PNG
+   inside the IMG element's box, so the border-radius ends up on
+   transparent empty space and the actual graphic stays sharp. Driving
+   the size by width only lets the IMG element match the PNG's natural
+   aspect ratio (1448×1086 = 4:3), so border-radius clips the
+   real graphic edges. 720px wide → 540px tall fits inside the 700px
+   panel with room for the buttons below. */
+.cd-pixabay-paywall-art {
+  display: block;
+  width: min(720px, 92%);
+  height: auto;
+  border-radius: 24px;
+}
+/* CTA + secondary link mirror the standard Paywall modal exactly so
+   the inline experience feels identical (just embedded over the
+   panel instead of in a centred dialog). */
+.cd-pixabay-paywall-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(420px, 80%);
+}
+/* Matches the main Clip Deck paywall's primary CTA (.cdp-btn) — green
+   gradient pill-rect with the mint glow — so the inline Pixabay /
+   Utility Plugins / Youtube paywalls share one consistent Upgrade
+   button instead of the old flat accent-coloured one. */
+.cd-pixabay-paywall-cta {
+  /* Inline-flex so the button shrink-wraps to its text instead of
+     stretching the full actions-column width. The column's
+     align-items:center keeps it centred. */
+  display: inline-flex; align-items: center; justify-content: center;
+  align-self: center;
+  width: auto;
+  padding: 13px 20px;
+  border: 1px solid rgba(0,0,0,0.4);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #00f29a 0%, #00c279 100%);
+  color: #04140d;
+  font: 800 13.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.5) inset,
+    0 -2px 0 rgba(0,0,0,0.18) inset,
+    0 16px 32px rgba(0,229,142,0.26),
+    0 0 0 5px rgba(0,229,142,0.08);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+}
+.cd-pixabay-paywall-cta:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.55) inset,
+    0 -2px 0 rgba(0,0,0,0.18) inset,
+    0 24px 50px rgba(0,229,142,0.42),
+    0 0 0 8px rgba(0,229,142,0.12);
+}
+.cd-pixabay-paywall-cta:active { transform: translateY(0); }
+.cd-pixabay-paywall-cta:focus,
+.cd-pixabay-paywall-cta:focus-visible { outline: 0; }
+.cd-pixabay-paywall-link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 4px 8px;
+  color: #000;
+  font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  transition: opacity .12s;
+}
+.cd-pixabay-paywall-link:hover { opacity: .75; }
+.cd-pixabay-paywall-link:focus,
+.cd-pixabay-paywall-link:focus-visible { outline: 0; }
+/* Utility Plugins + Youtube paywall variants — the link sits below
+   the image on the blurred dark panel, so white reads cleaner than
+   the Pixabay paywall's default black. */
+.cd-pixabay-paywall--utility .cd-pixabay-paywall-link,
+.cd-pixabay-paywall--youtube .cd-pixabay-paywall-link { color: #fff; }
+.cd-content-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.cd-crumbs {
+  display: flex; gap: 6px; align-items: center;
+  font-size: 11.5px;
+  color: var(--cd-muted);
+  font-weight: 500;
+}
+.cd-crumb-sep { color: var(--cd-dim); }
+.cd-result-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--cd-muted);
+  font-variant-numeric: tabular-nums;
+}
+.cd-result-meta b { color: var(--cd-text); font-weight: 600; }
+
+/* ── Tools > SFX browser (Pixabay-backed) ─────────────────────────────
+   Replaces the empty-grid placeholder for the SFX tool. Search +
+   result rows with inline preview + import. The whole panel sits
+   inside .cd-content so it inherits the same height envelope as the
+   slot grid. */
+.cd-sfx-browser {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-height: 0;
+  min-width: 0;
+  padding: 12px 14px;
+  gap: 10px;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(180,90,255,.18), transparent 70%),
+    linear-gradient(180deg, #1a0e2a 0%, #0e0820 60%, #050310 100%);
+}
+.cd-sfx-browser--gate {
+  grid-template-rows: 1fr;
+  place-items: center;
+}
+.cd-sfx-gate {
+  max-width: 380px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.45);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 12px 36px -10px rgba(0,0,0,.55);
+}
+.cd-sfx-gate-title {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .02em;
+  color: var(--cd-text);
+  margin-bottom: 8px;
+}
+.cd-sfx-gate-body {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--cd-muted);
+  margin: 0 0 12px 0;
+}
+.cd-sfx-gate-link { color: var(--cd-accent); font-weight: 500; }
+.cd-sfx-gate-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cd-sfx-gate-input,
+.cd-sfx-searchinput {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: .5px solid var(--cd-line2);
+  background: rgba(255,255,255,.04);
+  color: var(--cd-text);
+  font-size: 12.5px;
+  outline: 0;
+}
+.cd-sfx-gate-input:focus,
+.cd-sfx-searchinput:focus { border-color: var(--cd-accent-glow); background: rgba(255,255,255,.06); }
+.cd-sfx-gate-save,
+.cd-sfx-searchbtn {
+  appearance: none;
+  border: .5px solid transparent;
+  background: var(--cd-accent);
+  color: #0c0c12;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .02em;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cd-sfx-gate-save:disabled,
+.cd-sfx-searchbtn:disabled { opacity: .55; cursor: not-allowed; }
+
+.cd-sfx-searchbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cd-sfx-error {
+  font-size: 11.5px;
+  color: #ff9d8b;
+  background: rgba(220,80,60,.10);
+  border: .5px solid rgba(220,80,60,.30);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.cd-sfx-empty {
+  font-size: 12px;
+  color: var(--cd-muted);
+  text-align: center;
+  padding: 24px 12px;
+  align-self: start;
+}
+.cd-sfx-results {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+}
+.cd-sfx-results::-webkit-scrollbar { width: 8px; }
+.cd-sfx-results::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.10);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.cd-sfx-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(255,255,255,.025);
+  border: .5px solid var(--cd-line);
+  transition: background .12s, border-color .12s;
+}
+.cd-sfx-row:hover {
+  background: rgba(255,255,255,.05);
+  border-color: var(--cd-line2);
+}
+.cd-sfx-play {
+  appearance: none;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: .5px solid var(--cd-line2);
+  color: var(--cd-text);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.cd-sfx-play svg { width: 13px; height: 13px; }
+.cd-sfx-play:hover { background: rgba(255,255,255,.10); }
+.cd-sfx-play.on   { background: rgba(255,255,255,.10); }
+.cd-sfx-meta { min-width: 0; }
+.cd-sfx-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--cd-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-sfx-sub {
+  font-size: 10.5px;
+  color: var(--cd-muted);
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.cd-sfx-import {
+  appearance: none;
+  border: .5px solid transparent;
+  background: var(--cd-accent);
+  color: #0c0c12;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: .03em;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.cd-sfx-import:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Webview-mode SFX panel — embeds the Pixabay sound-effects site
+   inside the panel. No toolbar; Pixabay's own page chrome handles
+   navigation. The "Importing to timeline…" pill floats over the
+   webview as an absolute-positioned overlay during a fire. */
+.cd-sfx-browser--wv {
+  position: relative;
+  padding: 0;
+  gap: 0;
+  display: block; /* override the grid layout used by the API variant */
+}
+.cd-sfx-wv-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff; /* until the page paints, white reads cleaner than dark gray */
+}
+
+/* ── Utility Plugins marketplace ──────────────────────────────────
+   Two-section product layout: My Plugins (owned/included) on top,
+   INTHEZONE Plugins (store) below. Each section is a labelled
+   responsive grid of product cards. Hides Recently Used strip via
+   the App-level gate so cards get full vertical space. */
+.cd-plugins-panel {
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.4fr);
+  gap: 18px;
+  padding: 18px 18px 22px;
+  min-height: 0;
+  min-width: 0;
+  /* Stronger brand-tinted gradient — radial mint accent at the top
+     against a near-black canvas, plus a subtle blue glow at the
+     bottom right for depth. */
+  background:
+    radial-gradient(60% 55% at 18% -4%, rgba(0,255,149,.22), transparent 60%),
+    radial-gradient(45% 45% at 100% 100%, rgba(77,163,255,.10), transparent 70%),
+    linear-gradient(180deg, #0a0d12 0%, #07090d 100%);
+}
+.cd-plugins-left {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+  /* Hide the scrollbar but keep the area scrollable. */
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* legacy Edge */
+}
+.cd-plugins-left::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.cd-plugins-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.cd-plugins-section { display: flex; flex-direction: column; gap: 12px; }
+.cd-plugins-section-title {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--cd-text);
+  padding: 0 2px;
+}
+.cd-plugins-grid {
+  display: grid;
+  /* Auto-fill with a 200px floor so cards grow to share the row.
+     Two cards in My Plugins → roughly half the pane each. Art
+     region uses aspect-ratio below so it scales with card width. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+.cd-plugin-card {
+  appearance: none;
+  border: .5px solid var(--cd-line2);
+  background: var(--cd-panel);
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  /* Flex (not grid) — `<button>` + `display:grid` ignores
+     grid-template-rows on some platforms, so the art region was
+     blowing out. Flex column with a fixed-height art panel is
+     deterministic across renderers. */
+  display: flex;
+  flex-direction: column;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+  font: inherit;
+}
+.cd-plugin-card:focus, .cd-plugin-card:focus-visible { outline: 0; }
+.cd-plugin-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.cd-plugin-card:disabled { cursor: default; opacity: .82; }
+.cd-plugin-card-art {
+  position: relative;
+  overflow: hidden;
+  /* Scale with card width — a 4:5 aspect leaves enough vertical
+     room for the box-art PNGs (which are vertical product renders)
+     to render inside `object-fit: contain` without cropping. */
+  aspect-ratio: 4 / 5;
+  flex-shrink: 0;
+  /* Inner padding so the auto-trimmed box art doesn't crowd the
+     thumbnail edges. `<img>` with width:100% height:100% +
+     object-fit:contain lives inside the padded content box. */
+  padding: 22px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(60% 50% at 50% 30%, rgba(255,255,255,.05), transparent 80%),
+    linear-gradient(180deg, #1a1d24, #0c0e13);
+}
+.cd-plugin-card-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center 55%;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.cd-plugin-card-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+}
+.cd-plugin-card-fallback-mark {
+  width: 56px; height: 56px; border-radius: 16px;
+  box-shadow: 0 0 0 4px rgba(0,0,0,.35);
+}
+.cd-plugin-card-fallback-name {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cd-text);
+  position: absolute;
+  bottom: 18px;
+}
+.cd-plugin-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 13px 13px;
+  border-top: 1px solid var(--cd-line);
+  background: var(--cd-panel2);
+}
+.cd-plugin-card-name {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--cd-text);
+  letter-spacing: .01em;
+}
+.cd-plugin-card-tag {
+  font-size: 11px;
+  color: var(--cd-muted);
+  line-height: 1.35;
+  /* Clamp to two lines so card heights stay uniform. */
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.7em;
+}
+.cd-plugin-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cd-plugin-card-price {
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+.cd-plugin-card-cta {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cd-text);
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: rgba(255,255,255,.05);
+  border: .5px solid var(--cd-line2);
+}
+.cd-plugin-card-cta.on { background: rgba(0,255,149,.10); border-color: rgba(0,255,149,.30); }
+.cd-plugin-card--coming-soon .cd-plugin-card-cta {
+  color: var(--cd-dim);
+  background: transparent;
+  border-color: var(--cd-line);
+}
+.cd-plugin-card--coming-soon .cd-plugin-card-art { filter: saturate(.4) brightness(.65); }
+.cd-plugin-card.is-selected { border-color: var(--cd-accent-glow) !important; }
+.cd-plugin-card.is-selected .cd-plugin-card-cta { background: rgba(0,255,149,.10); border-color: rgba(0,255,149,.30); }
+
+/* Right pane — persistent plugin viewer. Sits next to the marketplace
+   cards and hosts the selected plugin's index.html in a webview.
+   Replaces the prior popup-modal flow per 2026-05-18 redesign. */
+.cd-plugin-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  background: rgba(10,12,18,.92);
+  border: .5px solid var(--cd-line2);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 14px 38px -16px rgba(0,0,0,.55);
+}
+.cd-plugin-panel-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #0c0e13;
+  flex: 1;
+}
+/* Floating "Watch Demo Tutorial" pill in the top-right of the plugin
+   panel. Lives above the bundled plugin's webview so it stays
+   reachable no matter what the plugin renders. Pointer-events sit on
+   the button itself; the rest of the area still passes clicks to
+   the panel underneath. */
+.cd-plugin-demo-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: .5px solid rgba(0,255,149,.35);
+  border-radius: 999px;
+  background: rgba(10,12,18,.92);
+  color: #00ff95;
+  font: 600 11px/1 -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, transform .12s, box-shadow .12s;
+  box-shadow: 0 6px 18px -8px rgba(0,255,149,.40);
+}
+.cd-plugin-demo-btn:hover {
+  background: rgba(0,255,149,.10);
+  border-color: rgba(0,255,149,.55);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -8px rgba(0,255,149,.55);
+}
+.cd-plugin-demo-btn:active { transform: translateY(0); }
+.cd-plugin-demo-btn svg { display: block; }
+/* App-level host for INTHEZONE plugin background webviews. Lives at
+   App-level so the helper-binary HTTP bridge keeps running even
+   when the visible plugin panel is unmounted (user navigates to
+   another tab) or the overlay is hidden via global hotkey. */
+.cd-plugin-bg-host {
+  position: absolute;
+  width: 1px; height: 1px;
+  left: -9999px; top: -9999px;
+  pointer-events: none;
+  opacity: 0;
+  overflow: hidden;
+}
+.cd-plugin-bg-host-frame {
+  width: 1px; height: 1px;
+}
+
+/* Placeholder shown in the right pane when no plugin is selected. */
+.cd-plugins-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: .5px dashed var(--cd-line2);
+  border-radius: 12px;
+  background: rgba(255,255,255,.015);
+  color: var(--cd-muted);
+  text-align: center;
+  padding: 32px 24px;
+  min-height: 0;
+  min-width: 0;
+}
+.cd-plugins-empty-title {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--cd-text);
+}
+.cd-plugins-empty-sub {
+  font-size: 11.5px;
+  color: var(--cd-muted);
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+/* Youtube browser — same minimalist treatment as the SFX panel.
+   No toolbar; the user navigates YouTube via YouTube's own UI.
+   Always mounted at App level (so playback state persists across
+   view switches); --hidden flips it out of layout when not active. */
+.cd-yt-browser {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cd-yt-browser--hidden {
+  display: none;
+}
+/* Free-tier lock — blur + dim the webview behind the YoutubePaywall
+   overlay. pointer-events disabled so clicks pass through to the
+   paywall's CTA. Webview filters work the same as on the SfxBrowser
+   blur layer used by the Pixabay paywall. */
+.cd-yt-browser--locked .cd-yt-frame {
+  filter: blur(8px) saturate(.6) brightness(.55);
+  pointer-events: none;
+}
+.cd-yt-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #0f0f0f; /* matches YouTube's dark theme so the flash is minimal */
+}
+
+/* Importing-to-timeline modal — full-panel blurred backdrop with a
+   centered card. Pops up the instant the webview's content preload
+   detects a Download click; persists through Electron's
+   will-download → download → relocate → importAsset chain and clears
+   on success or failure. */
+.cd-sfx-import-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.50);
+  -webkit-backdrop-filter: blur(10px) saturate(.8);
+  backdrop-filter: blur(10px) saturate(.8);
+  animation: cd-sfx-modal-fade .14s ease-out;
+}
+.cd-sfx-import-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 38px;
+  border-radius: 14px;
+  background: rgba(10,12,18,.92);
+  border: .5px solid var(--cd-accent-glow);
+  min-width: 240px;
+}
+.cd-sfx-import-spinner {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: cd-sfx-spin .8s linear infinite;
+}
+.cd-sfx-import-label {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--cd-text);
+}
+@keyframes cd-sfx-spin { to { transform: rotate(360deg); } }
+@keyframes cd-sfx-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Tool placeholder view ────────────────────────────────────────────
+   Inert empty 40-slot grid that renders when the user clicks an
+   unlocked INTHEZONE Tools entry (Effects / SFX / Utility Plugins /
+   Youtube). No header — the sidebar's highlighted row already tells
+   the user where they are. Per-tool background gradients live below. */
+.cd-tool-view {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-height: 0;
+  min-width: 0;
+}
+/* V2 Tactile redesign — Effects + Transitions tool views share the
+   same neutral dark backdrop as the main panel. Cards carry their own
+   per-type color (blue for fx, yellow for transition, cyan for audio-
+   fx, lime for audio-transition) so the grid background stays out of
+   the way and the colored tiles read as the figure. */
+.cd-tool-view--effects .cd-grid,
+.cd-tool-view--transitions .cd-grid {
+  background: #0c0c0e;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.025) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+/* SFX tool keeps its original red wash — not in the V2 redesign scope. */
+.cd-tool-view--sfx .cd-grid {
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(255,80,80,.22), transparent 70%),
+    linear-gradient(180deg, #3a0b0b 0%, #280606 60%, #1a0303 100%);
+}
+
+/* ── Grid ─────────────────────────────────────────────────────────────── */
+/* Claude Design V2 Tactile — 10×4 grid with 14px gaps + 18px panel
+   padding. The tile edge is auto-computed in SlotGrid (ResizeObserver
+   on the grid element) to fit the available content area while
+   staying square; the result is published as `--cd-tile` so the grid
+   tracks render at exactly the right size. Internal tile elements
+   use `cqmin` so they scale with the actual tile, matching the
+   design's 220-square proportions at any window size. */
+.cd-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 8px 10px;
+  overflow: hidden;
+  min-height: 0;
+  align-content: stretch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.10) transparent;
+  background: #0c0c0e;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.025) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+.cd-grid--results {
+  /* Search results inherit the .cd-grid base (10×4 fixed). Tile-type
+     styling never applies to SearchResultTile so it stays visually
+     consistent without being affected by V2 tile rules. */
+}
+.cd-grid::-webkit-scrollbar { width: 8px; }
+.cd-grid::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.10);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* Density variant disabled — the V2 Tactile spec defines one canonical
+   layout (10×4 at 220px tiles). Leaving this rule as a no-op so any
+   stray `data-density="regular"` attribute doesn't accidentally fight
+   the canonical sizing. */
+[data-density="regular"] .cd-grid { /* canonical V2 layout — no override */ }
+
+/* ── Search results ──────────────────────────────────────────────────── */
+/* Identical grid layout to the deck (10 × 4 of 1fr × 1fr). Results just
+   fill the cells from the top-left. Tile dimensions therefore match the
+   deck slot exactly, and the inner thumb area has the right height for
+   the gradient + thumbnail to render. */
+.cd-grid--results { /* inherits .cd-grid base */ }
+[data-density="regular"] .cd-grid--results { /* inherits density override */ }
+.cd-search-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--cd-dim);
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+/* Footer line below the search-result grid when the result set
+   exceeds the 40-slot cap. Mirrors .cd-search-empty's quiet tone. */
+.cd-search-more {
+  padding: 6px 12px 10px;
+  text-align: center;
+  color: var(--cd-dim);
+  font-size: 10.5px;
+  letter-spacing: .02em;
+}
+/* Result tile = clickable button stripped of native styling. */
+.cd-result-tile {
+  appearance: none;
+  border: .5px solid var(--cd-line2);
+  background: var(--cd-panel);
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.cd-result-tile:focus, .cd-result-tile:focus-visible { outline: 0; }
+.cd-result-tile:hover { transform: translateY(-2px) scale(1.012); }
+/* Keyboard-highlighted result — driven by arrow-key navigation in
+   the search input. Mirrors the accent glow used on hovered slot
+   tiles so the user can see which result Enter will fire. */
+.cd-result-tile.cd-result-tile--selected {
+  border-color: var(--cd-accent);
+  box-shadow: 0 0 0 2px var(--cd-accent-glow, var(--cd-accent)), 0 8px 30px -10px var(--cd-accent-glow, var(--cd-accent));
+  transform: translateY(-2px) scale(1.012);
+  z-index: 1;
+}
+
+/* ── Tile ─────────────────────────────────────────────────────────────── */
+.cd-tile {
+  position: relative;
+  display: grid;
+  grid-template-rows: 3fr 1fr;
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform .18s cubic-bezier(.3,.7,.3,1.4), box-shadow .18s, border-color .18s;
+  will-change: transform;
+  /* Prevent grid items from blowing out their cells when child content
+     (long file names) defaults to min-width:auto. Without these, a long
+     filename in the foot pushes the whole tile wider than the grid cell,
+     which in turn rescales the thumbnail's `inset: 0` box. */
+  min-width: 0;
+  min-height: 0;
+}
+.cd-tile.on { transform: translateY(-2px) scale(1.012); }
+/* Text-thumb mode: the preset title IS the thumbnail. Used by curated
+   INTHEZONE Tools effect cards (e.g. Lumetri Color). The tile drops its
+   bottom foot label (would just repeat the title) and the body fills
+   the whole height. */
+.cd-tile.text-mode { grid-template-rows: 1fr; }
+.cd-tile-text-thumb {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 8px 10px;
+  pointer-events: none;
+}
+.cd-tile-text-thumb span {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: .015em;
+  line-height: 1.15;
+  color: rgba(255,255,255,.96);
+  text-shadow:
+    0 1px 2px rgba(0,0,0,.55),
+    0 0 1px rgba(0,0,0,.4);
+  word-break: break-word;
+}
+/* Keep the slot's hue gradient at full brightness behind the text —
+   the title's text-shadow handles readability across colours, no
+   filter dimming needed. (Earlier value: brightness(.55) saturate(.7)
+   — read as "the card is darker than the regular deck cards.") */
+.cd-tile-thumb {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+.cd-tile-bg { position: absolute; inset: 0; }
+/* Image / video first-frame — fits inside the tile via object-fit:contain.
+   Whole image is always visible, never cropped. Letterbox bars (when the
+   source aspect doesn't match the tile aspect) show the slot's gradient. */
+.cd-tile-thumb-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* Dark fade overlay sits on the *thumb*, not on the gradient layer, so it
+   stays on top of any image/video layer below it. Keeps kbd hint + play
+   button readable regardless of the underlying media. */
+.cd-tile-thumb::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 40%, rgba(0,0,0,.30) 100%),
+    radial-gradient(120% 80% at 50% 110%, rgba(0,0,0,.20), transparent 60%);
+}
+.cd-tile-thumb .cd-wave {
+  position: absolute;
+  inset: 0 5px;
+  height: 100%;
+}
+
+.cd-wave {
+  display: flex;
+  align-items: center;
+  gap: 1.5px;
+  height: 100%;
+}
+.cd-wave > span {
+  display: block;
+  flex: 1;
+  min-width: 1px;
+  border-radius: 1px;
+  background: rgba(255,255,255,.55);
+  align-self: center;
+}
+
+.cd-tile-meta {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 5px;
+  font-size: 10px;
+  z-index: 2;
+}
+.cd-tag-mini {
+  font-size: 8.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: rgba(255,255,255,.78);
+  padding: 1px 4px;
+  border-radius: 3px;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(0,0,0,.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: .5px solid rgba(255,255,255,.08);
+  transition: color .15s;
+}
+.cd-dur {
+  font: 500 9px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: rgba(255,255,255,.65);
+  background: rgba(0,0,0,.45);
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: .5px solid rgba(255,255,255,.08);
+}
+
+/* Generic pop-in animation, used by the kind badge. (Play button removed.) */
+@keyframes cd-pop {
+  from { transform: scale(.7); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.cd-kbd-hint {
+  position: absolute;
+  top: 4px; left: 4px;
+  display: flex; gap: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+.cd-kbd-hint kbd {
+  background: rgba(0,0,0,.55);
+  border-color: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  min-width: 20px;
+  height: 20px;
+  font-size: 11.5px;
+  padding: 0 5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.cd-tile-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-top: 1px solid var(--cd-line);
+  background: var(--cd-panel2);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.cd-tile-name {
+  font-size: 9.5px;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--cd-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -.005em;
+}
+.cd-tile-sub {
+  font: 500 9px/1.1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-dim);
+}
+
+/* ── Recently used strip ─────────────────────────────────────────────── */
+.cd-recent {
+  border-top: 1px solid var(--cd-line);
+  background: linear-gradient(180deg, var(--cd-bg), var(--cd-panel));
+  padding: 10px 14px 12px;
+  min-height: 0;
+}
+.cd-recent-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.cd-recent-title {
+  position: relative;
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--cd-muted);
+}
+.cd-recent-ico { width: 13px; height: 13px; }
+/* Title button — looks like the original static title until you hover.
+   Caret + subtle hover background signal "this is a dropdown" without
+   adding visual weight to the strip when it's just sitting idle. */
+.cd-recent-title-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 6px 3px 4px;
+  margin-left: -4px;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.cd-recent-title-btn:hover { color: var(--cd-text); background: rgba(255,255,255,.04); }
+.cd-recent-title-btn:focus, .cd-recent-title-btn:focus-visible { outline: 0; }
+.cd-recent-title-btn.open { color: var(--cd-text); background: rgba(255,255,255,.05); }
+.cd-recent-title-caret {
+  width: 10px; height: 10px;
+  color: var(--cd-dim);
+  transition: transform .14s, color .12s;
+}
+.cd-recent-title-btn:hover .cd-recent-title-caret { color: var(--cd-text); }
+.cd-recent-title-btn.open .cd-recent-title-caret { transform: rotate(180deg); color: var(--cd-text); }
+/* Dropdown — opens upward from the title since the strip sits at the
+   bottom of the panel. Right-edge alignment is irrelevant; we anchor to
+   the title's left so it reads as belonging to it. */
+.cd-recent-modes {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  z-index: 30;
+  padding: 4px;
+  border-radius: 7px;
+  background: var(--cd-panel2);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 14px 30px -10px rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+}
+.cd-recent-mode {
+  text-align: left;
+  white-space: nowrap;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  font: 500 11.5px/1.1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cd-muted);
+  cursor: pointer;
+  transition: background .1s, color .1s;
+}
+.cd-recent-mode:hover { background: rgba(255,255,255,.06); color: var(--cd-text); }
+.cd-recent-mode:focus, .cd-recent-mode:focus-visible { outline: 0; }
+.cd-recent-mode.active { color: var(--cd-accent); background: var(--cd-accent-soft); }
+.cd-recent-clear {
+  background: transparent;
+  border: 0;
+  padding: 4px 8px;
+  border-radius: 5px;
+  color: var(--cd-dim);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.cd-recent-clear:hover { color: var(--cd-accent); background: var(--cd-accent-soft); }
+.cd-recent-clear:focus, .cd-recent-clear:focus-visible { outline: 0; }
+.cd-recent-clear:disabled { opacity: .35; cursor: default; pointer-events: none; }
+.cd-recent-count {
+  background: rgba(255,255,255,.05);
+  border: .5px solid var(--cd-line2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font: 500 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-dim);
+  letter-spacing: 0;
+}
+.cd-recent-tools { display: flex; gap: 4px; }
+.cd-link {
+  background: transparent;
+  border: 0;
+  color: var(--cd-muted);
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cd-link:hover { color: var(--cd-text); background: rgba(255,255,255,.04); }
+
+.cd-recent-row {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 2px;
+}
+.cd-rtile {
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 3fr 1fr;
+  /* Match the main grid's tile shape — that grid is 10 columns × 4
+     rows packed inside ~1071 × 469 of usable space, so each cell ends
+     up ~107 × 117 → aspect 11/12 (just slightly portrait). Square
+     (1/1) reads as squished; 5/6 stretched too far. */
+  aspect-ratio: 11 / 12;
+  min-width: 0;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+/* Legacy Recent tiles keep the same lift as main deck tiles. V2 tiles
+   also get the shared ring/glow via RecentTile's inline hover style. */
+.cd-rtile.on { transform: translateY(-2px) scale(1.012); }
+.cd-rtile-thumb {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+.cd-rtile-bg { position: absolute; inset: 0; }
+.cd-rtile-thumb .cd-wave {
+  position: absolute;
+  inset: 0 5px;
+  height: 100%;
+}
+/* Title-as-thumb for transition captures in the Recent / Most Used strip.
+   Mirrors .cd-tile-text-thumb on the main grid (curated transition cards)
+   so saved transitions read the same way wherever they appear. The
+   .text-mode modifier on .cd-rtile hides the foot label (avoids the title
+   appearing twice) and dims the gradient background for readability. */
+.cd-rtile-text-thumb {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 4px 6px;
+  pointer-events: none;
+}
+.cd-rtile-text-thumb span {
+  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
+  font-weight: 700;
+  /* Match the main grid's .cd-tile-text-thumb size so the same card
+     reads identically in the deck and in the recent strip. */
+  font-size: 13.5px;
+  letter-spacing: .015em;
+  line-height: 1.15;
+  color: rgba(255,255,255,.96);
+  text-shadow: 0 1px 2px rgba(0,0,0,.55), 0 0 1px rgba(0,0,0,.4);
+  word-break: break-word;
+}
+.cd-rtile.text-mode { grid-template-rows: 1fr; }
+.cd-rtile.text-mode .cd-rtile-foot { display: none; }
+.cd-rtile-foot {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 5px;
+  border-top: 1px solid var(--cd-line);
+  background: var(--cd-panel2);
+  /* Prevent long filenames from blowing out the flex layout — same fix as
+     .cd-tile-foot. Without these, intrinsic min-width:auto on the name
+     span pushes the foot wider than the tile's grid cell, which in turn
+     resizes the thumb's `inset: 0` reference box. */
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.cd-rtile-name {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--cd-text);
+  text-align: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Gradient thumb (palette only) ───────────────────────────────────── */
+.cd-grad {
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  display: grid; place-items: end;
+}
+.cd-grad span {
+  position: absolute; left: 6px; bottom: 4px;
+  font: 500 9px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: rgba(255,255,255,.82);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* ── Command palette ──────────────────────────────────────────────────── */
+.cd-pal-scrim {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+  display: grid;
+  place-items: start center;
+  padding-top: 80px;
+  animation: cd-fade .12s ease-out;
+}
+.cd-pal {
+  width: 560px;
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20,22,28,.96);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: .5px solid rgba(255,255,255,.10);
+  border-radius: 12px;
+  box-shadow:
+    0 30px 80px -20px rgba(0,0,0,.7),
+    0 1px 0 rgba(255,255,255,.06) inset;
+  overflow: hidden;
+  animation: cd-rise .16s cubic-bezier(.2,.8,.3,1.1);
+}
+@keyframes cd-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cd-rise {
+  from { transform: translateY(8px) scale(.985); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.cd-pal-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 14px 0 40px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.cd-pal-ico {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--cd-muted);
+}
+.cd-pal-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: var(--cd-text);
+}
+.cd-pal-input::placeholder { color: var(--cd-dim); }
+.cd-pal-esc {
+  font: 500 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-dim);
+  border: .5px solid var(--cd-line2);
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-transform: lowercase;
+}
+.cd-pal-body {
+  overflow-y: auto;
+  padding: 6px 6px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.10) transparent;
+}
+.cd-pal-group { padding: 4px 0; }
+.cd-pal-group-h {
+  font: 600 10px/1 ui-sans-serif, system-ui;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--cd-dim);
+  padding: 8px 10px 6px;
+}
+.cd-pal-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  transition: background .1s;
+}
+.cd-pal-row:hover { background: rgba(255,255,255,.03); }
+.cd-pal-row.on { background: rgba(255,255,255,.05); }
+
+.cd-pal-thumb {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  color: var(--cd-muted);
+  border: .5px solid var(--cd-line2);
+}
+.cd-pal-thumb.dim { background: rgba(255,255,255,.04); }
+.cd-pal-thumb svg { width: 14px; height: 14px; }
+.cd-pal-row-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cd-pal-row-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--cd-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cd-pal-row-tag {
+  font: 500 10px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--cd-dim);
+}
+.cd-pal-kbd { display: flex; gap: 3px; }
+.cd-pal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--cd-line);
+  background: rgba(255,255,255,.02);
+  font-size: 10.5px;
+  color: var(--cd-muted);
+}
+.cd-pal-foot-l { display: flex; gap: 14px; }
+.cd-pal-foot-l span { display: flex; align-items: center; gap: 5px; }
+.cd-pal-foot-r { display: flex; align-items: center; gap: 6px; }
+
+/* ── Misc ─────────────────────────────────────────────────────────────── */
+::selection { background: var(--cd-accent-soft, rgba(77,163,255,.3)); }
+
+/* ── v1: extension-only additions ──────────────────────────────────────── */
+
+/* Hotkey-recording pulse — used by the Preferences popover's hotkey
+   button while the user is binding a new key. */
+@keyframes cd-hotkey-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--cd-accent-glow); }
+  50%      { box-shadow: 0 0 0 4px transparent; }
+}
+
+/* Empty slot — same outer shape as a populated tile but dashed + dim. */
+.cd-tile.empty {
+  background: transparent;
+  border: .5px dashed var(--cd-line2);
+  cursor: default;
+}
+.cd-tile.empty:hover { border-color: var(--cd-accent-glow); }
+.cd-tile-empty-body {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--cd-dim);
+  font: 500 9.5px/1.2 ui-sans-serif, system-ui;
+  text-align: center;
+  padding: 4px;
+}
+.cd-tile-empty-body .cd-kbd-hint { top: 4px; left: 4px; }
+.cd-tile-empty-body .cd-tile-empty-plus {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--cd-dim);
+  margin-bottom: 4px;
+}
+.cd-tile-empty-body .cd-tile-empty-hint {
+  font-size: 8.5px;
+  color: var(--cd-dim);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* Drag-over highlight on any slot. */
+.cd-tile.drag-over {
+  border-color: var(--cd-accent);
+  box-shadow: 0 0 0 1px var(--cd-accent), 0 0 0 4px var(--cd-accent-soft);
+}
+
+/* Source tile while it's being dragged elsewhere — looks "lifted out". */
+.cd-tile.dragging {
+  opacity: .35;
+  transform: scale(.94);
+  border-style: dashed;
+  border-color: var(--cd-accent-glow);
+  box-shadow: none;
+  cursor: grabbing;
+}
+.cd-tile.dragging .cd-tile-name { opacity: .6; }
+
+/* Subtle dim on every other tile while a slot drag is in progress, so the
+   user's eye is drawn to potential drop targets. */
+.cd-grid.is-dragging .cd-tile:not(.dragging) { opacity: .82; }
+.cd-grid.is-dragging .cd-tile.drag-over { opacity: 1; }
+
+/* Tile-level dwell progress bar removed — drops now always swap when
+   the destination is populated, so there's no longer a "hold to switch
+   from replace to swap" affordance to visualize. The cd-side-item +
+   cd-tag dwell timers (library / deck switch on hover during a drag)
+   still use the same @keyframes defined below. */
+@keyframes cd-dwell-fill {
+  to { width: 100%; }
+}
+
+/* Capturing — a clipboard capture is in flight on this tile. Dim the tile
+   contents and overlay a spinner + label so the user sees progress while
+   the panel intentionally stays open during Premiere's brief Cmd+C. */
+.cd-tile.capturing { border-color: var(--cd-accent-glow); }
+.cd-tile-capturing {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  grid-auto-flow: row;
+  background: rgba(0,0,0,.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  border-radius: 8px;
+  pointer-events: none;
+  animation: cd-pop .14s ease-out;
+}
+.cd-tile-capturing-spinner {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.18);
+  border-top-color: var(--cd-accent);
+  animation: cd-spin 0.7s linear infinite;
+}
+.cd-tile-capturing-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cd-accent);
+}
+@keyframes cd-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Swap preview — the dwell threshold was met. The two tiles' displayed
+   content is swapped (handled by SlotGrid), and both tiles wiggle gently
+   to communicate "this is a preview, not yet committed". A soft accent
+   ring on the destination tells the user it's the active drop target. */
+.cd-tile.previewing {
+  animation: cd-preview-wiggle .55s ease-in-out infinite;
+  box-shadow: 0 0 0 1px var(--cd-accent-glow), 0 8px 22px -8px rgba(0,0,0,.5);
+  border-color: var(--cd-accent-glow);
+  z-index: 4;
+}
+@keyframes cd-preview-wiggle {
+  0%, 100% { transform: translateY(0) rotate(-1.4deg); }
+  50%      { transform: translateY(-1px) rotate(1.4deg); }
+}
+/* The source tile (the one being dragged) usually has the .dragging styles
+   (opacity .35, scale .94). When previewing, we suppress the dragging class
+   in JS so the tile shows the destination's content normally with the wiggle
+   on top — nothing to override here. */
+
+/* Toast for the "Set Panel Hotkey" placeholder + import errors. */
+.cd-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20,22,28,.94);
+  border: .5px solid rgba(255,255,255,.10);
+  color: var(--cd-text);
+  font-size: 11.5px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,.6);
+  animation: cd-toast .15s ease-out;
+}
+@keyframes cd-toast {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ── v2 overlay overrides ───────────────────────────────────────────────
+   Electron window is transparent + chromeless; the stage shouldn't paint
+   a background or fill the viewport — the panel itself IS the window.
+*/
+html, body, #root { background: transparent !important; }
+
+.cd-stage {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  padding: 0;
+}
+
+.cd-bezel {
+  /* Outer bezel — slightly more pronounced shadow since we're floating
+     on top of arbitrary backgrounds, not Premiere's dark workspace. */
+  box-shadow:
+    0 50px 110px -20px rgba(0,0,0,.75),
+    0 22px 50px -16px rgba(0,0,0,.55);
+}
+
+.cd-panel {
+  /* Match the bezel's outer rounding so transparent window doesn't show
+     a square clip outside the rounded corners. */
+  width: 100%;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+}
+
+/* Window is pinned in place (movable: false) — no drag regions. */
+
+/* "Connect Premiere" inline notice when the CEP backend isn't reachable. */
+.cd-connect-banner {
+  position: absolute;
+  top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 60;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #FFB347;
+  background: rgba(60,40,15,.85);
+  border: .5px solid rgba(255,179,71,.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.cd-connect-banner i {
+  width: 6px; height: 6px; border-radius: 50%; background: #FFB347;
+  box-shadow: 0 0 8px rgba(255,179,71,.6);
+}
+
+/* ── Context menu (right-click on slot tile) ───────────────────────────── */
+.cd-ctx-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  /* invisible hit-target that closes the menu when the user clicks away */
+  background: transparent;
+}
+.cd-ctx {
+  position: fixed;
+  z-index: 100;
+  min-width: 0;
+  width: max-content;
+  padding: 4px;
+  border-radius: 9px;
+  background: rgba(20,22,28,.94);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: .5px solid rgba(255,255,255,.10);
+  box-shadow:
+    0 18px 50px -12px rgba(0,0,0,.7),
+    0 1px 0 rgba(255,255,255,.06) inset;
+  animation: cd-ctx-fade .1s ease-out;
+}
+@keyframes cd-ctx-fade {
+  from { opacity: 0; transform: translateY(-4px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+.cd-ctx-h {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--cd-dim);
+  font-weight: 600;
+  padding: 6px 10px 4px;
+}
+.cd-ctx-item {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-text);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: 5px;
+  cursor: default;
+  transition: background .1s;
+}
+.cd-ctx-item:hover { background: rgba(255,255,255,.06); }
+.cd-ctx-item.danger:hover { background: rgba(255,80,80,.12); color: #FF8F8F; }
+.cd-ctx-item:disabled { color: var(--cd-dim); cursor: default; }
+.cd-ctx-item:disabled:hover { background: transparent; }
+.cd-ctx-divider {
+  height: 1px;
+  background: rgba(255,255,255,.08);
+  margin: 4px 6px;
+}
+/* Hotkey-recorder row in library + tool context menus. Sits above the
+   action list with its own padding so it doesn't look like a hover
+   target. */
+.cd-ctx-hotkey-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 4px;
+}
+.cd-ctx-hotkey-btn {
+  flex: 1 1 0;
+  padding: 6px 10px;
+  border: .5px solid rgba(0, 255, 149, .35);
+  border-radius: 6px;
+  background: rgba(0, 255, 149, .06);
+  color: #00ff95;
+  font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+  text-align: center;
+}
+.cd-ctx-hotkey-btn:hover {
+  background: rgba(0, 255, 149, .12);
+  border-color: rgba(0, 255, 149, .55);
+}
+.cd-ctx-hotkey-btn.recording {
+  background: rgba(255, 200, 0, .15);
+  border-color: rgba(255, 200, 0, .55);
+  color: #ffcc44;
+  animation: cd-ctx-hotkey-pulse 1.3s ease-in-out infinite;
+}
+/* Pro-locked recorder — visible but neutered. Click pops the paywall
+   so the user sees what they're missing without invoking the recorder. */
+.cd-ctx-hotkey-btn.pro-locked {
+  color: var(--cd-dim);
+  background: rgba(255,255,255,.03);
+  display: inline-flex; align-items: center; gap: 6px;
+  justify-content: center;
+}
+.cd-ctx-hotkey-btn.pro-locked:hover { color: var(--cd-text); }
+.cd-ctx-pro-lock { font-size: 11px; opacity: .8; }
+@keyframes cd-ctx-hotkey-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 200, 0, .35); }
+  50%      { box-shadow: 0 0 0 4px rgba(255, 200, 0, 0); }
+}
+.cd-ctx-hotkey-clear {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: .5px solid var(--cd-line2);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--cd-dim);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.cd-ctx-hotkey-clear:hover {
+  background: rgba(255, 80, 80, .12);
+  border-color: rgba(255, 80, 80, .4);
+  color: #ff8585;
+}
+.cd-ctx-colors {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  padding: 0 8px 8px;
+}
+.cd-ctx-color {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  cursor: default;
+  transition: transform .12s, box-shadow .12s;
+  position: relative;
+  overflow: hidden;
+  border: .5px solid rgba(255,255,255,.08);
+}
+.cd-ctx-color:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 4px 10px -2px rgba(0,0,0,.4);
+}
+.cd-ctx-color.active {
+  box-shadow: 0 0 0 1.5px var(--cd-accent), 0 4px 10px -2px rgba(0,0,0,.4);
+}
+
+/* ── Inline name editor (double-click tile name) ───────────────────────── */
+.cd-tile-name-edit {
+  font-size: 9.5px;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  color: var(--cd-text);
+  background: rgba(255,255,255,.06);
+  border: 0;
+  outline: 0;
+  padding: 0 4px;
+  font-family: inherit;
+  letter-spacing: -.005em;
+  border-radius: 3px;
+  height: 100%;
+}
+.cd-tile-name-edit:focus { background: rgba(255,255,255,.10); }
+
+/* ── Inline rename inputs (sidebar libraries + topbar deck tabs) ────────── */
+
+/* Sidebar library row, edit mode */
+.cd-side-label-edit {
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--cd-text);
+  background: rgba(255,255,255,.06);
+  border: 0;
+  outline: 0;
+  padding: 0 4px;
+  border-radius: 4px;
+  width: 100%;
+  font-family: inherit;
+  letter-spacing: -.005em;
+}
+.cd-side-label-edit:focus { background: rgba(255,255,255,.10); }
+
+/* Topbar deck tab, edit mode — input lives inside a .cd-tag span so the
+   pill outline + accent colour stays visually identical. */
+.cd-tag-edit {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: center;
+  padding: 0;
+  min-width: 40px;
+  font-family: inherit;
+}
+.cd-tag-edit:focus { outline: 0; }
+
+/* Kind badge — top-right indicator for image/video thumbnails. Hidden on
+   hover so the play button can use this corner. The cd-pop entrance
+   animation was removed because it fired on every tile of every deck
+   switch — with 40 populated tiles all popping in at once, the UI
+   visibly flashed/glitched on every navigation. Mount is silent now. */
+.cd-tile-kind {
+  position: absolute;
+  top: 4px; right: 4px;
+  z-index: 2;
+  width: 18px; height: 18px;
+  border-radius: 5px;
+  background: rgba(0,0,0,.55);
+  border: .5px solid rgba(255,255,255,.10);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  display: grid; place-items: center;
+  color: rgba(255,255,255,.88);
+  pointer-events: none;
+}
+.cd-tile-kind svg { width: 11px; height: 11px; }
+/* Transition variant — mint-tinted so the user can tell at a glance
+   that this card fires a transition rather than an effect preset. */
+.cd-tile-kind--transition {
+  background: rgba(0, 255, 149, .18);
+  border-color: rgba(0, 255, 149, .55);
+  color: #00ff95;
+}
+.cd-tile-kind--transition svg { width: 13px; height: 13px; }
+/* Effect variant — blue-tinted to mirror the Effects deck gradient
+   (rgba(80,150,255,...)) so effect cards read as the blue family the
+   same way transition cards read as the mint family. */
+.cd-tile-kind--effect {
+  background: rgba(80, 150, 255, .18);
+  border-color: rgba(80, 150, 255, .55);
+  color: #5096ff;
+}
+
+
+/* Big centered placeholder icon for slots that have no real thumbnail
+   (timeline-captured clipboard payloads, captured nested sequences). */
+.cd-tile-clip-ico {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: rgba(255,255,255,.78);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.45));
+}
+.cd-tile-clip-ico svg { width: 44%; height: 44%; }
+/* Subtype-specific scaling for the timeline-capture placeholder glyphs.
+   Big "T" reads better slightly larger; MOGRT and nested-folder icons use
+   the default scale. Defined as modifier classes so future visual tweaks
+   stay isolated to the CSS without touching the JSX. */
+.cd-tile-clip-ico--text  svg { width: 68%; height: 68%; }
+.cd-tile-clip-ico--mogrt svg { width: 48%; height: 48%; }
+.cd-tile-clip-ico--nested svg { width: 50%; height: 50%; }
+.cd-rtile-clip-ico {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: rgba(255,255,255,.78);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.45));
+}
+.cd-rtile-clip-ico svg { width: 50%; height: 50%; }
+.cd-rtile-clip-ico--text  svg { width: 72%; height: 72%; }
+.cd-rtile-clip-ico--mogrt svg { width: 54%; height: 54%; }
+.cd-rtile-clip-ico--nested svg { width: 56%; height: 56%; }
+
+/* Fire-count badge for Most Used view. Sits in the far upper-left
+   corner, replacing the spot the shortcut chip would otherwise hold,
+   so it doesn't cover the top-right type-badge / duration chip. */
+.cd-rtile-count {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  right: auto;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .65);
+  color: var(--cd-accent);
+  font: 700 9px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: -.01em;
+  pointer-events: none;
+  z-index: 4;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* ── Confirm dialog (delete library, etc.) ─────────────────────────────── */
+.cd-confirm-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  animation: cd-fade .14s ease-out;
+}
+.cd-confirm {
+  width: 360px;
+  max-width: calc(100% - 48px);
+  padding: 18px 18px 14px;
+  border-radius: 12px;
+  background: rgba(20,22,28,.96);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: .5px solid rgba(255,255,255,.10);
+  box-shadow:
+    0 28px 70px -16px rgba(0,0,0,.7),
+    0 1px 0 rgba(255,255,255,.06) inset;
+  animation: cd-rise .16s cubic-bezier(.2,.8,.3,1.1);
+}
+.cd-confirm-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  margin-bottom: 6px;
+  color: var(--cd-text);
+}
+.cd-confirm-msg {
+  font-size: 12px;
+  color: var(--cd-muted);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+.cd-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.cd-confirm-btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  border: .5px solid var(--cd-line2);
+  background: rgba(255,255,255,.04);
+  color: var(--cd-text);
+  cursor: default;
+  transition: background .12s, border-color .12s;
+}
+.cd-confirm-btn:hover { background: rgba(255,255,255,.08); }
+.cd-confirm-btn.primary {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+  color: #0E0F12;
+}
+.cd-confirm-btn.primary:hover { filter: brightness(1.08); }
+.cd-confirm-btn.danger {
+  background: rgba(255,80,80,.22);
+  border-color: rgba(255,80,80,.32);
+  color: #FFB1B1;
+}
+.cd-confirm-btn.danger:hover { background: rgba(255,80,80,.32); }
+
+/* Attribute Picker — wider than ConfirmDialog (needs room for two columns
+   of attributes) and uses .cd-attr-* sub-elements for the body. */
+.cd-attr-picker {
+  width: 440px;
+  max-width: calc(100% - 48px);
+}
+.cd-attr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.cd-attr-group {
+  border: .5px solid var(--cd-line2);
+  border-radius: 8px;
+  padding: 8px 10px 10px;
+  background: rgba(255,255,255,.02);
+}
+.cd-attr-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  margin-bottom: 6px;
+}
+.cd-attr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+  color: var(--cd-text);
+  cursor: default;
+  user-select: none;
+}
+.cd-attr-row input[type="checkbox"] {
+  accent-color: var(--cd-accent);
+  cursor: default;
+  width: 14px;
+  height: 14px;
+}
+.cd-attr-label {
+  flex: 1;
+}
+.cd-attr-fx-list {
+  font-size: 11px;
+  color: var(--cd-muted);
+  font-style: italic;
+  margin: 2px 0 0 22px;
+  line-height: 1.45;
+}
+
+/* ── Freemium UI ──────────────────────────────────────────────────────── */
+
+/* Plan badge sits in the sidebar under the brand mark. Free = pill with a
+   subtle "Upgrade" CTA. Pro = quiet mint dot + "Pro" word. */
+/* Plan badge — small rounded chip tucked into the lower-right of the brand
+   row. Free is muted, Pro is mint. Pro is also a click target that opens
+   the manage-license menu. */
+.cd-plan-badge-wrap { position: relative; display: inline-block; }
+.cd-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: .5px solid var(--cd-line2);
+  background: rgba(255,255,255,.04);
+  font: 700 8.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.cd-plan-badge:hover { color: var(--cd-text); border-color: var(--cd-line2); background: rgba(255,255,255,.06); }
+.cd-plan-badge:focus, .cd-plan-badge:focus-visible { outline: 0; }
+.cd-plan-badge--pro {
+  background: var(--cd-accent-soft);
+  border-color: var(--cd-accent-glow);
+  color: var(--cd-accent);
+}
+.cd-plan-badge--pro:hover { background: color-mix(in srgb, var(--cd-accent) 18%, transparent); }
+/* Static variant — pure indicator, no interactivity. Applied to the
+   PRO pill so it stops behaving like a clickable target. */
+.cd-plan-badge--static { cursor: default; user-select: none; }
+.cd-plan-badge--static:hover { background: var(--cd-accent-soft); }
+/* TESTING variant — orange/amber pill used only by the beta build's
+   silent-mode PlanBadge. Distinct from FREE (which lives in the
+   production builds) so beta testers see a clear "you're on the
+   testing channel" cue without surfacing pricing or upgrade CTAs. */
+.cd-plan-badge--testing {
+  background: color-mix(in srgb, #ff8a3d 18%, transparent);
+  border-color: color-mix(in srgb, #ff8a3d 50%, transparent);
+  color: #ff9a4d;
+}
+.cd-plan-badge--testing.cd-plan-badge--static:hover {
+  background: color-mix(in srgb, #ff8a3d 18%, transparent);
+}
+
+.cd-plan-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  z-index: 30;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--cd-panel2);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 14px 30px -10px rgba(0,0,0,.55);
+}
+.cd-plan-menu-email {
+  padding: 8px 10px 6px;
+  font: 500 11.5px/1.3 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+  border-bottom: .5px solid var(--cd-line);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+.cd-plan-menu-offline {
+  padding: 4px 10px 6px;
+  font: 500 10px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-dim);
+  border-bottom: .5px solid var(--cd-line);
+  margin-bottom: 4px;
+}
+.cd-plan-menu-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-text);
+  text-align: left;
+  border-radius: 6px;
+  font: 500 12px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  transition: background .12s;
+}
+.cd-plan-menu-item:hover { background: rgba(255,255,255,.05); }
+.cd-plan-menu-item:focus, .cd-plan-menu-item:focus-visible { outline: 0; }
+.cd-plan-menu-item--danger { color: #FFB1B1; }
+.cd-plan-menu-item--danger:hover { background: rgba(255,80,80,.10); }
+
+/* Accessibility-denied modal — shown when osascript hits the 1002 /
+   "not allowed to send keystrokes" error. Mirrors the paywall modal
+   layout so it visually belongs to the modal family. Higher z-index
+   than paywall (44 vs 41) so if both somehow fire, this takes priority. */
+.cd-access-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 48px));
+  z-index: 44;
+  padding: 28px 28px 22px;
+  border-radius: 14px;
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,.75);
+  animation: cd-paywall-rise .18s cubic-bezier(.2,.7,.3,1.05);
+}
+.cd-access-headline {
+  font: 700 22px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  margin: 0 0 8px;
+  letter-spacing: -.01em;
+}
+.cd-access-sub {
+  font: 400 13.5px/1.45 -apple-system, "Inter", sans-serif;
+  color: var(--cd-muted);
+  margin: 0 0 14px;
+}
+.cd-access-steps {
+  padding: 0 0 0 22px;
+  margin: 0 0 18px;
+  color: var(--cd-text);
+}
+.cd-access-steps li {
+  font: 400 13px/1.5 -apple-system, "Inter", sans-serif;
+  margin: 4px 0;
+  color: rgba(255,255,255,.78);
+}
+.cd-access-steps li b { color: var(--cd-text); font-weight: 600; }
+.cd-access-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cd-access-cta {
+  padding: 11px 22px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--cd-accent);
+  color: #000;
+  font: 700 13px/1 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  transition: filter .12s;
+}
+.cd-access-cta:hover { filter: brightness(1.08); }
+.cd-access-link {
+  background: transparent;
+  border: 0;
+  color: var(--cd-muted);
+  padding: 6px 12px;
+  font: 500 12px/1.2 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  align-self: center;
+  transition: color .12s;
+}
+.cd-access-link:hover { color: var(--cd-text); }
+
+/* Paywall modal — full-window scrim + centered dialog. */
+.cd-paywall-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 40;
+  animation: cd-paywall-fade .14s ease-out;
+}
+/* When the devices modal is opened on top of Preferences, its scrim
+   needs to sit above the prefs modal (z 41) so clicks on the scrim
+   hit the dismiss handler instead of the prefs underneath. */
+.cd-paywall-scrim--devices { z-index: 42; }
+
+/* First-launch onboarding modal — pre-rendered illustration (the
+   Welcome-to-Clip-Deck graphic) fills the modal body; only chrome
+   we render is the close button + the Watch Tutorial CTA. */
+.cd-onboarding-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .72);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+  z-index: 50;
+  animation: cd-paywall-fade .18s ease-out;
+}
+.cd-onboarding-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(820px, calc(100vw - 48px));
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  z-index: 51;
+  padding: 18px;
+  border-radius: 20px;
+  background: #06080d;
+  border: .5px solid rgba(0, 255, 149, .18);
+  box-shadow:
+    0 28px 70px -16px rgba(0, 0, 0, .8),
+    0 0 0 1px rgba(0, 255, 149, .04) inset,
+    0 60px 120px -40px rgba(0, 255, 149, .12);
+  animation: cd-onboarding-pop .22s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes cd-onboarding-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.cd-onboarding-close {
+  position: absolute;
+  top: 26px;
+  right: 26px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .35);
+  color: rgba(231, 233, 238, .7);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  z-index: 1;
+}
+.cd-onboarding-close:hover { background: rgba(0, 0, 0, .55); color: #fff; }
+.cd-onboarding-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Cap the image height so the modal + CTA always fit inside the
+     overlay window. 18+18 padding + ~46 button + 14 margin-top + a bit
+     of breathing room ≈ 110px of non-image vertical chrome. */
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  border-radius: 12px;
+}
+.cd-onboarding-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #00ff95 0%, #00d97c 100%);
+  color: #04130A;
+  font: 700 13px/1 -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+  letter-spacing: .005em;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s, opacity .12s;
+  box-shadow: 0 8px 22px -6px rgba(0, 255, 149, .5);
+}
+.cd-onboarding-cta:hover  { transform: translateY(-1px); box-shadow: 0 12px 28px -6px rgba(0, 255, 149, .65); }
+.cd-onboarding-cta:active { transform: translateY(0); opacity: .92; }
+.cd-onboarding-cta svg    { display: block; }
+.cd-paywall-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  z-index: 41;
+  padding: 28px 20px 24px;
+  border-radius: 14px;
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,.7);
+  animation: cd-paywall-rise .18s cubic-bezier(.2,.7,.3,1.05);
+}
+/* Variant used by the marketing "offer" view. Two-column feature grid
+   (sized to the Electron overlay's typical width). Login + waiting fall
+   back to the narrow modal above. */
+.cd-paywall-modal--offer {
+  width: min(640px, calc(100vw - 32px));
+  padding: 32px 36px 26px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(0,229,142,0.04), transparent 30%),
+    var(--cd-panel);
+  border: 1px solid rgba(0, 229, 142, 0.16);
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    0 0 32px rgba(0, 229, 142, 0.16);
+  overflow: visible;
+}
+.cd-paywall-modal--offer::before {
+  content: "";
+  position: absolute; left: 24px; right: 24px; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,142,0.45), transparent);
+}
+/* Device manager modal (Preferences → Manage devices). Same scrim +
+   layout as the paywall modal. z-index bumped one above the prefs
+   modal (which is 41) so the devices modal stacks on top when opened
+   from inside Preferences. */
+.cd-devices-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 48px));
+  z-index: 43;
+  padding: 28px 28px 24px;
+  border-radius: 14px;
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,.7);
+  animation: cd-paywall-rise .18s cubic-bezier(.2,.7,.3,1.05);
+}
+
+/* ── 30-day refund — Preferences link + post-refund feedback modal ── */
+/* Plain text link, right-aligned at the BOTTOM of the SETTINGS column
+   (intentionally NOT in the right-hand graphic column where the welcome
+   illustration lives). margin-top: auto pushes it past the settings
+   list to the bottom edge of the column regardless of how many rows
+   the list has. Low-contrast on purpose — the user only goes hunting
+   for it; we don't want it competing with the actual settings. */
+.cd-prefs-refund-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  text-align: right;
+}
+.cd-prefs-refund-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 11.5px;
+  color: rgba(255,255,255,.42);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255,255,255,.22);
+  transition: color .14s, text-decoration-color .14s;
+}
+.cd-prefs-refund-link:hover {
+  color: rgba(255,255,255,.85);
+  text-decoration-color: rgba(255,255,255,.5);
+}
+.cd-prefs-refund-link:focus, .cd-prefs-refund-link:focus-visible { outline: 0; }
+.cd-prefs-refund-link:disabled { opacity: .5; cursor: default; }
+
+/* Post-refund "Help us improve Clip Deck" feedback modal. Slightly
+   wider than the devices modal to fit the reason chips comfortably. */
+.cd-refund-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 48px));
+  z-index: 43;
+  padding: 28px 28px 24px;
+  border-radius: 14px;
+  background: var(--cd-panel);
+  border: .5px solid var(--cd-line2);
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,.7);
+  animation: cd-paywall-rise .18s cubic-bezier(.2,.7,.3,1.05);
+}
+.cd-refund-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 18px;
+}
+.cd-refund-reason {
+  background: rgba(255,255,255,.05);
+  border: .5px solid var(--cd-line2);
+  color: var(--cd-text);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .14s, border-color .14s, color .14s;
+}
+.cd-refund-reason:hover { background: rgba(255,255,255,.09); }
+.cd-refund-reason.on {
+  background: var(--cd-accent-soft);
+  border-color: var(--cd-accent-glow);
+  color: var(--cd-accent);
+}
+.cd-refund-reason:focus, .cd-refund-reason:focus-visible { outline: 0; }
+.cd-refund-reason:disabled { opacity: .55; cursor: default; }
+
+.cd-refund-text-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--cd-text);
+  margin: 4px 0 6px;
+}
+.cd-refund-text-optional {
+  font-weight: 400;
+  color: var(--cd-dim);
+  font-size: 11.5px;
+}
+.cd-refund-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 84px;
+  max-height: 240px;
+  resize: vertical;
+  background: rgba(0,0,0,.25);
+  border: .5px solid var(--cd-line2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--cd-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  transition: border-color .14s;
+}
+.cd-refund-textarea:focus, .cd-refund-textarea:focus-visible {
+  outline: 0;
+  border-color: var(--cd-accent-glow);
+}
+.cd-refund-textarea::placeholder { color: rgba(255,255,255,.32); }
+
+.cd-refund-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.cd-refund-btn {
+  appearance: none;
+  background: rgba(255,255,255,.05);
+  border: .5px solid var(--cd-line2);
+  color: var(--cd-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .14s, border-color .14s, color .14s;
+}
+.cd-refund-btn:hover { background: rgba(255,255,255,.09); }
+.cd-refund-btn:focus, .cd-refund-btn:focus-visible { outline: 0; }
+.cd-refund-btn:disabled { opacity: .5; cursor: default; }
+.cd-refund-btn--primary {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+  color: #000;
+}
+.cd-refund-btn--primary:hover {
+  background: var(--cd-accent);
+  filter: brightness(1.08);
+}
+.cd-refund-btn--primary:disabled {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.4);
+  filter: none;
+}
+.cd-devices-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cd-devices-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: .5px solid var(--cd-line2);
+  border-radius: 10px;
+  background: rgba(255,255,255,.02);
+}
+.cd-devices-row--current {
+  border-color: color-mix(in srgb, var(--cd-accent) 40%, transparent);
+  background: var(--cd-accent-soft);
+}
+.cd-devices-meta {
+  flex: 1;
+  min-width: 0;
+}
+.cd-devices-label {
+  font: 600 13.5px/1.25 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+}
+.cd-devices-this {
+  color: var(--cd-accent);
+  font-weight: 500;
+}
+.cd-devices-seen {
+  font: 400 11.5px/1.3 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+  margin-top: 3px;
+}
+.cd-devices-signout {
+  background: transparent;
+  color: #FFB1B1;
+  border: .5px solid rgba(255,118,118,.30);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font: 500 12px/1.2 -apple-system, "Inter", sans-serif;
+  cursor: pointer;
+  transition: background .1s ease, color .1s ease, border-color .1s ease;
+}
+.cd-devices-signout:hover { background: rgba(255,118,118,.10); }
+.cd-devices-signout:disabled { opacity: .55; cursor: default; }
+.cd-devices-loading,
+.cd-devices-empty {
+  color: var(--cd-muted);
+  padding: 24px 0 8px;
+  text-align: center;
+  font-size: 13px;
+}
+.cd-devices-error {
+  color: #FFB1B1;
+  background: rgba(255,118,118,.08);
+  border: .5px solid rgba(255,118,118,.20);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 18px;
+  font-size: 12.5px;
+}
+@keyframes cd-paywall-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cd-paywall-rise {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.985); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.cd-paywall-headline {
+  margin: 0 0 22px;
+  font: 700 30px/1.15 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  letter-spacing: -.015em;
+  white-space: nowrap;
+  text-align: center;
+}
+.cd-paywall-sub {
+  margin: 0 0 18px;
+  font: 400 13.5px/1.55 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+}
+.cd-paywall-features {
+  list-style: none;
+  margin: 0 0 22px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+.cd-paywall-features li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font: 500 12.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+  position: relative;
+}
+.cd-paywall-features li.highlight {
+  color: var(--cd-accent);
+}
+.cd-paywall-features li.highlight .cd-paywall-check { color: var(--cd-accent); }
+/* Hover tooltip — short description appears to the right of the bullet.
+   Pure CSS so no React state churn; the tooltip pulls its text from the
+   bullet's data-tip attribute. */
+.cd-paywall-features li[data-tip]:not([data-tip=""])::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 18px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(16, 18, 22, 0.98);
+  border: .5px solid var(--cd-line2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+  width: 240px;
+  white-space: normal;
+  font: 500 12px/1.45 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  letter-spacing: 0;
+  box-shadow: 0 14px 36px -10px rgba(0,0,0,.7);
+  z-index: 50;
+}
+.cd-paywall-features li[data-tip]:not([data-tip=""]):hover::after { opacity: 1; }
+.cd-paywall-check {
+  display: inline-grid;
+  place-items: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  font-size: 10px;
+  color: var(--cd-dim);
+  flex-shrink: 0;
+}
+.cd-paywall-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.cd-paywall-cta {
+  display: block;
+  width: 100%;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cd-accent);
+  color: #0E0F12;
+  font: 600 13.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  transition: filter .12s, transform .12s;
+}
+.cd-paywall-cta:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.cd-paywall-cta:disabled { opacity: .5; cursor: default; }
+.cd-paywall-cta:focus, .cd-paywall-cta:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--cd-accent-soft); }
+.cd-paywall-link {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-muted);
+  font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color .12s, background .12s;
+}
+.cd-paywall-link:hover { color: var(--cd-text); }
+.cd-paywall-link:focus, .cd-paywall-link:focus-visible { outline: 0; }
+.cd-paywall-foot {
+  margin: 0;
+  font: 500 10.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-dim);
+  text-align: center;
+  letter-spacing: .03em;
+}
+.cd-paywall-form { display: grid; gap: 12px; margin-bottom: 14px; }
+.cd-paywall-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: .5px solid var(--cd-line2);
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  color: var(--cd-text);
+  font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  transition: border-color .12s, background .12s;
+}
+.cd-paywall-input:focus, .cd-paywall-input:focus-visible {
+  outline: 0;
+  border-color: var(--cd-accent-glow);
+  background: rgba(255,255,255,.06);
+}
+.cd-paywall-input:disabled { opacity: .55; }
+.cd-paywall-error {
+  margin: -4px 0 0;
+  font: 500 11.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #FFB1B1;
+}
+.cd-paywall-success {
+  margin: 4px 0 0;
+  padding: 9px 12px;
+  background: var(--cd-accent-soft);
+  border: .5px solid var(--cd-accent-glow);
+  border-radius: 8px;
+  color: var(--cd-accent);
+  font: 600 12.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+.cd-paywall-spinner {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,.1);
+  border-top-color: var(--cd-accent);
+  margin: 18px auto 22px;
+  animation: cd-paywall-spin .85s linear infinite;
+}
+@keyframes cd-paywall-spin { to { transform: rotate(360deg); } }
+
+/* ── Pro paywall ("offer" view) — new Claude Design lockup ──────────────
+   Wide 3×3 feature grid, mint accent, eyebrow tag, big bold headline,
+   CTA row with price + button, trust footer, hover tooltips. Layout
+   sourced from the design bundle at /clip-deck-paywall/project/. All
+   class names use the `cdp-` prefix to keep the legacy `cd-paywall-*`
+   styles intact for the login + waiting views. */
+.cd-paywall-modal--offer .cdp-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 142, 0.32);
+  background: rgba(0,229,142,0.06);
+  color: #5cf2b6;
+  font: 500 10px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.cd-paywall-modal--offer .cdp-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #00e58e;
+  box-shadow: 0 0 8px #00e58e;
+}
+.cd-paywall-modal--offer .cdp-head {
+  margin: 14px 0 8px;
+  font: 800 32px/1.05 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.022em;
+  color: #fff;
+}
+.cd-paywall-modal--offer .cdp-head .cdp-accent {
+  color: #00e58e;
+  text-shadow: 0 0 24px rgba(0,229,142,0.35);
+}
+.cd-paywall-modal--offer .cdp-lede {
+  margin: 0 0 20px;
+  font: 400 13.5px/1.5 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #8b9a93;
+  max-width: 56ch;
+}
+.cd-paywall-modal--offer .cdp-features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.cd-paywall-modal--offer .cdp-feature {
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.005));
+  cursor: default;
+  outline: 0;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.cd-paywall-modal--offer .cdp-feature:hover,
+.cd-paywall-modal--offer .cdp-feature:focus-visible,
+.cd-paywall-modal--offer .cdp-feature.is-highlight {
+  border-color: rgba(0, 229, 142, 0.32);
+  background: linear-gradient(180deg, rgba(0,229,142,0.07), rgba(0,229,142,0.02));
+  box-shadow:
+    0 0 0 1px rgba(0,229,142,0.18) inset,
+    0 10px 30px rgba(0,229,142,0.10);
+  transform: translateY(-1px);
+}
+.cd-paywall-modal--offer .cdp-ficon {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  background: rgba(0,229,142,0.08);
+  border: 1px solid rgba(0,229,142,0.22);
+  color: #00e58e;
+  transition: background .2s ease, box-shadow .2s ease;
+}
+.cd-paywall-modal--offer .cdp-feature:hover .cdp-ficon,
+.cd-paywall-modal--offer .cdp-feature:focus-visible .cdp-ficon,
+.cd-paywall-modal--offer .cdp-feature.is-highlight .cdp-ficon {
+  background: rgba(0,229,142,0.16);
+  box-shadow: 0 0 18px rgba(0,229,142,0.35);
+}
+.cd-paywall-modal--offer .cdp-ficon svg { display: block; width: 15px; height: 15px; }
+.cd-paywall-modal--offer .cdp-flabel {
+  font: 600 13px/1.3 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #eaf3ee;
+  letter-spacing: -0.005em;
+}
+.cd-paywall-modal--offer .cdp-tip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 280px;
+  max-width: 90vw;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #0b1213;
+  border: 1px solid rgba(0, 229, 142, 0.32);
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.5),
+    0 0 30px rgba(0,229,142,0.18);
+  color: #e9f2ee;
+  font: 500 13px/1.5 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 30;
+  text-align: left;
+}
+.cd-paywall-modal--offer .cdp-tip .cdp-tip-title {
+  display: block;
+  font: 700 12px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #00e58e;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.cd-paywall-modal--offer .cdp-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 229, 142, 0.32);
+}
+.cd-paywall-modal--offer .cdp-feature:hover .cdp-tip,
+.cd-paywall-modal--offer .cdp-feature:focus-visible .cdp-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* Tooltip alignment for 2-column grid — left column anchors tip to the
+   left edge of the tile, right column anchors to the right edge, so the
+   tooltip never clips outside the modal. */
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n+1) .cdp-tip {
+  left: 0;
+  transform: translateY(4px);
+}
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n+1) .cdp-tip::after {
+  left: 18px; transform: none;
+}
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n+1):hover .cdp-tip,
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n+1):focus-visible .cdp-tip {
+  transform: translateY(0);
+}
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n) .cdp-tip {
+  left: auto; right: 0;
+  transform: translateY(4px);
+}
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n) .cdp-tip::after {
+  left: auto; right: 18px; transform: none;
+}
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n):hover .cdp-tip,
+.cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n):focus-visible .cdp-tip {
+  transform: translateY(0);
+}
+
+/* CTA row */
+.cd-paywall-modal--offer .cdp-cta-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+.cd-paywall-modal--offer .cdp-price-block {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.cd-paywall-modal--offer .cdp-price {
+  font: 800 30px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+.cd-paywall-modal--offer .cdp-dollar {
+  color: #8b9a93;
+  font-weight: 600;
+  font-size: 18px;
+  margin-right: 2px;
+  vertical-align: top;
+  position: relative; top: 3px;
+}
+.cd-paywall-modal--offer .cdp-price-note {
+  color: #8b9a93;
+  font: 400 11.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+.cd-paywall-modal--offer .cdp-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, #00f29a 0%, #00c279 100%);
+  color: #04140d;
+  font: 800 13.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.5) inset,
+    0 -2px 0 rgba(0,0,0,0.18) inset,
+    0 16px 32px rgba(0,229,142,0.26),
+    0 0 0 5px rgba(0,229,142,0.08);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+  white-space: nowrap;
+}
+.cd-paywall-modal--offer .cdp-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.55) inset,
+    0 -2px 0 rgba(0,0,0,0.18) inset,
+    0 24px 50px rgba(0,229,142,0.42),
+    0 0 0 8px rgba(0,229,142,0.12);
+}
+.cd-paywall-modal--offer .cdp-btn:active { transform: translateY(0); }
+.cd-paywall-modal--offer .cdp-btn:disabled { opacity: .6; cursor: default; }
+.cd-paywall-modal--offer .cdp-arrow {
+  width: 16px; height: 16px;
+  transition: transform .2s ease;
+}
+.cd-paywall-modal--offer .cdp-btn:hover .cdp-arrow { transform: translateX(3px); }
+.cd-paywall-modal--offer .cdp-price-tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(4,20,13,0.18);
+  border: 1px solid rgba(4,20,13,0.25);
+  font: 700 11.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+
+/* Trust footer */
+.cd-paywall-modal--offer .cdp-trust {
+  margin-top: 16px;
+  display: flex; align-items: center; gap: 14px;
+  color: #5a6a64;
+  font: 500 11px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  flex-wrap: wrap;
+}
+.cd-paywall-modal--offer .cdp-trust--bare {
+  justify-content: center;
+}
+.cd-paywall-modal--offer .cdp-trust--bare .cdp-already {
+  margin-left: 0;
+}
+.cd-paywall-modal--offer .cdp-pip {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.cd-paywall-modal--offer .cdp-pip svg {
+  width: 12px; height: 12px; color: #00e58e;
+}
+.cd-paywall-modal--offer .cdp-already {
+  margin-left: auto;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #8b9a93;
+  font: 500 11.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: 6px;
+  transition: color .12s;
+}
+.cd-paywall-modal--offer .cdp-already:hover { color: #fff; }
+.cd-paywall-modal--offer .cdp-already:focus-visible {
+  outline: 0; box-shadow: 0 0 0 2px rgba(0,229,142,0.4);
+}
+
+/* Login / waiting (narrow modal) — keep the existing narrow modal width
+   and use cdp-mini-* classes so typography is consistent with the offer
+   view. */
+.cd-paywall-modal--login,
+.cd-paywall-modal--waiting {
+  text-align: left;
+}
+.cd-paywall-modal--login .cdp-mini-head,
+.cd-paywall-modal--waiting .cdp-mini-head {
+  margin: 0 0 8px;
+  font: 700 22px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-text);
+  letter-spacing: -.01em;
+}
+.cd-paywall-modal--login .cdp-mini-sub,
+.cd-paywall-modal--waiting .cdp-mini-sub {
+  margin: 0 0 18px;
+  font: 400 13.5px/1.55 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: var(--cd-muted);
+}
+.cd-paywall-modal--login .cdp-form { display: grid; gap: 12px; margin-bottom: 14px; }
+.cd-paywall-modal--login .cdp-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: .5px solid var(--cd-line2);
+  border-radius: 10px;
+  background: rgba(0,0,0,.25);
+  color: var(--cd-text);
+  font: 500 13.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  outline: 0;
+  transition: border-color .12s, box-shadow .12s;
+}
+.cd-paywall-modal--login .cdp-input:focus {
+  border-color: rgba(0,229,142,0.5);
+  box-shadow: 0 0 0 3px rgba(0,229,142,0.15);
+}
+.cd-paywall-modal--login .cdp-input:disabled { opacity: .55; }
+.cd-paywall-modal--login .cdp-error {
+  margin: 0; padding: 8px 12px;
+  background: rgba(255,90,90,0.08);
+  border: .5px solid rgba(255,90,90,0.3);
+  border-radius: 8px;
+  color: #ff8585;
+  font: 500 12.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+.cd-paywall-modal--login .cdp-success {
+  margin: 0; padding: 10px 12px;
+  background: rgba(0,229,142,0.08);
+  border: .5px solid rgba(0,229,142,0.4);
+  border-radius: 8px;
+  color: #00e58e;
+  font: 600 12.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+.cd-paywall-modal--login .cdp-btn--full,
+.cd-paywall-modal--waiting .cdp-btn--full {
+  display: block;
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, #00f29a 0%, #00c279 100%);
+  color: #04140d;
+  font: 700 13.5px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.4) inset,
+    0 14px 28px rgba(0,229,142,0.22),
+    0 0 0 4px rgba(0,229,142,0.06);
+  transition: filter .12s, transform .12s;
+}
+.cd-paywall-modal--login .cdp-btn--full:hover:not(:disabled),
+.cd-paywall-modal--waiting .cdp-btn--full:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.cd-paywall-modal--login .cdp-btn--full:disabled,
+.cd-paywall-modal--waiting .cdp-btn--full:disabled { opacity: .55; cursor: default; }
+.cd-paywall-modal--login .cdp-back,
+.cd-paywall-modal--waiting .cdp-back {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-muted);
+  font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color .12s;
+}
+.cd-paywall-modal--login .cdp-back:hover,
+.cd-paywall-modal--waiting .cdp-back:hover { color: var(--cd-text); }
+.cd-paywall-modal--waiting .cdp-spinner {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,.1);
+  border-top-color: #00e58e;
+  margin: 18px auto 22px;
+  animation: cd-paywall-spin .85s linear infinite;
+}
+
+/* ── License-key view (paste-your-Gumroad-key) ────────────────────────
+   Used both as a Paywall sub-view (when arriving from Get Pro or
+   "I already have a license key →") and as the standalone EnterLicenseKey
+   modal opened from Preferences. Visual language follows the offer
+   view (eyebrow pill + accent headline + green CTA) but trimmed to a
+   single column at the narrow modal width — this is an activation
+   moment, not a feature pitch. */
+.cd-paywall-modal--license-key {
+  width: min(480px, calc(100vw - 32px));
+  padding: 32px 32px 24px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(0,229,142,0.05), transparent 35%),
+    var(--cd-panel);
+  border: 1px solid rgba(0, 229, 142, 0.16);
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    0 0 32px rgba(0, 229, 142, 0.16);
+  text-align: left;
+}
+.cd-paywall-modal--license-key::before {
+  content: "";
+  position: absolute; left: 24px; right: 24px; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,142,0.45), transparent);
+}
+.cd-paywall-modal--license-key .cdp-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 142, 0.32);
+  background: rgba(0,229,142,0.06);
+  color: #5cf2b6;
+  font: 500 10px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.cd-paywall-modal--license-key .cdp-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #00e58e;
+  box-shadow: 0 0 8px #00e58e;
+}
+.cd-paywall-modal--license-key .cdp-head {
+  margin: 0 0 8px;
+  font: 800 26px/1.1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.022em;
+  color: #fff;
+}
+.cd-paywall-modal--license-key .cdp-head .cdp-accent {
+  color: #00e58e;
+  text-shadow: 0 0 24px rgba(0,229,142,0.35);
+}
+.cd-paywall-modal--license-key .cdp-lede {
+  margin: 0 0 22px;
+  font: 400 13.5px/1.55 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #8b9a93;
+  max-width: 52ch;
+}
+.cd-paywall-modal--license-key .cdp-form {
+  display: grid; gap: 14px; margin-bottom: 8px;
+}
+.cd-paywall-modal--license-key .cdp-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.35);
+  color: var(--cd-text);
+  font: 500 13.5px/1.4 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  outline: 0;
+  transition: border-color .12s, box-shadow .12s, background .12s;
+}
+.cd-paywall-modal--license-key .cdp-input::placeholder {
+  color: rgba(139, 154, 147, 0.45);
+  letter-spacing: 0.08em;
+}
+.cd-paywall-modal--license-key .cdp-input:focus {
+  border-color: rgba(0,229,142,0.55);
+  background: rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 4px rgba(0,229,142,0.12);
+}
+.cd-paywall-modal--license-key .cdp-input:disabled { opacity: .55; }
+.cd-paywall-modal--license-key .cdp-error {
+  margin: 0; padding: 10px 14px;
+  background: rgba(255,90,90,0.08);
+  border: 1px solid rgba(255,90,90,0.3);
+  border-radius: 10px;
+  color: #ff8585;
+  font: 500 12.5px/1.5 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+.cd-paywall-modal--license-key .cdp-btn--full {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, #00f29a 0%, #00c279 100%);
+  color: #04140d;
+  font: 700 14px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.4) inset,
+    0 14px 28px rgba(0,229,142,0.22),
+    0 0 0 4px rgba(0,229,142,0.06);
+  transition: filter .12s, transform .12s;
+}
+.cd-paywall-modal--license-key .cdp-btn--full:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.cd-paywall-modal--license-key .cdp-btn--full:disabled { opacity: .55; cursor: default; }
+.cd-paywall-modal--license-key .cdp-back {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-muted);
+  font: 500 12px/1.2 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color .12s;
+}
+.cd-paywall-modal--license-key .cdp-back:hover { color: var(--cd-text); }
+/* Device picker (shown after 409 too_many_devices) — slim list inside
+   the license-key card. Inherits .cd-devices-list base shape but tones
+   down the contrast for an in-flow picker. */
+.cd-paywall-modal--license-key .cd-devices-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid; gap: 8px;
+}
+.cd-paywall-modal--license-key .cd-devices-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.cd-paywall-modal--license-key .cd-devices-signout {
+  padding: 8px 12px;
+  border: 1px solid rgba(0,229,142,0.32);
+  border-radius: 8px;
+  background: rgba(0,229,142,0.08);
+  color: #5cf2b6;
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.cd-paywall-modal--license-key .cd-devices-signout:hover:not(:disabled) {
+  background: rgba(0,229,142,0.14);
+  border-color: rgba(0,229,142,0.45);
+}
+
+/* ── Launch pricing — first-100-customers founders discount ─────────
+   Activated when /launch/status returns launchActive=true. Replaces
+   the left-side price block with a three-line tagline (eyebrow hero
+   "ONE-TIME LAUNCH PRICE" + struck-through $99 next to mint $59 +
+   "for the first 100 pro users"), wraps the CTA button in a right-side
+   column so the "N founder licenses left" counter can stack beneath
+   it, and KEEPS the button's price pill as the single launch price
+   ("$59 one-time"). When inactive, the original single-price layout
+   renders unchanged — the renderer ternary picks the branch. */
+
+/* Loading skeleton — used while /launch/status is in-flight, reserves
+   space so the price/CTA row doesn't shift in when the response lands
+   and we never flash the wrong-state UI. The min-height is the
+   approximate rendered height of the resolved row (price block +
+   button + counter wrapped). */
+.cd-paywall-modal--offer .cdp-cta-row--loading {
+  min-height: 132px;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+}
+
+.cd-paywall-modal--offer .cdp-price-launch-tag {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.cd-paywall-modal--offer .cdp-price-launch-hero {
+  font: 700 10.5px/1 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #00e58e;
+  text-shadow: 0 0 12px rgba(0,229,142,0.35);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.cd-paywall-modal--offer .cdp-price-launch-row {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-top: 2px;
+}
+.cd-paywall-modal--offer .cdp-price-launch-old {
+  font: 700 18px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.02em;
+  color: #5a6b62;
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 90, 90, 0.7);
+  text-decoration-thickness: 2px;
+}
+.cd-paywall-modal--offer .cdp-price-launch-amount {
+  font: 800 32px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.03em;
+  color: #00e58e;
+  text-shadow: 0 0 24px rgba(0,229,142,0.35);
+}
+.cd-paywall-modal--offer .cdp-price-launch-context {
+  font: 500 12.5px/1.4 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #8b9a93;
+  max-width: 22ch;
+}
+
+/* Right column: wraps the green CTA + the launch counter so they
+   stack and stay right-aligned within the cdp-cta-row flex parent. */
+.cd-paywall-modal--offer .cdp-cta-side {
+  display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+}
+
+/* Counter chip beneath the button. Lives inside the right column so
+   its width auto-fills (align-items:stretch on the parent) and it
+   sits directly under the CTA. */
+.cd-paywall-modal--offer .cdp-launch-counter {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 14px 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 142, 0.32);
+  background: linear-gradient(180deg, rgba(0,229,142,0.10), rgba(0,229,142,0.04));
+  box-shadow: 0 0 24px rgba(0,229,142,0.10);
+}
+.cd-paywall-modal--offer .cdp-launch-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #00e58e;
+  box-shadow: 0 0 12px #00e58e;
+  animation: cdp-launch-pulse 1.8s ease-in-out infinite;
+}
+@keyframes cdp-launch-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+.cd-paywall-modal--offer .cdp-launch-count {
+  font: 800 15px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #00e58e;
+  text-shadow: 0 0 12px rgba(0,229,142,0.4);
+  letter-spacing: -0.01em;
+}
+.cd-paywall-modal--offer .cdp-launch-label {
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  color: #c7d6cf;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive — drop to 1-column and stack CTA when the Electron window
+   gets really narrow. The 2-column default already fits the modal at
+   typical overlay widths. */
+@media (max-width: 520px) {
+  .cd-paywall-modal--offer { padding: 28px 22px 22px; }
+  .cd-paywall-modal--offer .cdp-features { grid-template-columns: 1fr; }
+  .cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n) .cdp-tip,
+  .cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n+1) .cdp-tip {
+    left: 50%; right: auto;
+    transform: translateX(-50%) translateY(4px);
+  }
+  .cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n) .cdp-tip::after,
+  .cd-paywall-modal--offer .cdp-features .cdp-feature:nth-child(2n+1) .cdp-tip::after {
+    left: 50%; right: auto; transform: translateX(-50%);
+  }
+  .cd-paywall-modal--offer .cdp-cta-row { flex-direction: column; align-items: stretch; }
+  .cd-paywall-modal--offer .cdp-btn { width: 100%; }
+  .cd-paywall-modal--offer .cdp-head { font-size: 26px; }
+  .cd-paywall-modal--offer .cdp-already { margin-left: 0; }
+}
+
+/* ── Pro Onboarding — first-Pro celebration ───────────────────────────
+   Ported from the "Pro Onboarding.html" design bundle. Dark + mint
+   visual language matching the paywall offer view; sized to fit the
+   1320×700 overlay window. Shown once on the first Free→Pro flip. */
+.cd-proonb-scrim {
+  position: fixed; inset: 0;
+  z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  background: #07090a;
+  overflow-y: auto;
+  animation: cd-proonb-fade .2s ease-out;
+}
+@keyframes cd-proonb-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Confetti — CSS/DOM particles. The container sits above the card so
+   the burst falls in front; each .cd-proonb-bit is an absolutely-
+   positioned span driven by the cd-proonb-bit-fly keyframe via the
+   per-particle --cd-bit-* custom properties set inline in the JSX.
+   Canvas-free so it renders dependably inside the Electron overlay. */
+.cd-proonb-confetti {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 62;
+  overflow: hidden;
+}
+.cd-proonb-bit {
+  position: absolute;
+  top: 30%;
+  border-radius: 1.5px;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: cd-proonb-bit-fly;
+  animation-timing-function: cubic-bezier(.18,.7,.38,1);
+  animation-fill-mode: both;
+  animation-iteration-count: 1;
+}
+.cd-proonb-bit.is-round { border-radius: 50%; }
+/* Accessibility — users with "Reduce Motion" set get no confetti at
+   all (the panel itself still appears, just without the burst). */
+@media (prefers-reduced-motion: reduce) {
+  .cd-proonb-confetti { display: none; }
+}
+/* Pop up to the arc peak (~30%), then fall past the bottom while
+   rotating + fading. dx/peak/dy/dr come from inline custom props. */
+@keyframes cd-proonb-bit-fly {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+  9%   { opacity: 1; }
+  30%  { transform: translate3d(calc(var(--cd-bit-dx) * .42), var(--cd-bit-peak), 0) rotate(calc(var(--cd-bit-dr) * .34)); opacity: 1; }
+  78%  { opacity: 1; }
+  100% { transform: translate3d(var(--cd-bit-dx), var(--cd-bit-dy), 0) rotate(var(--cd-bit-dr)); opacity: 0; }
+}
+
+.cd-proonb-card {
+  position: relative;
+  z-index: 61;
+  width: min(980px, calc(100vw - 44px));
+  background:
+    linear-gradient(180deg, rgba(0,229,142,0.04), transparent 30%),
+    #0c1112;
+  border: 1px solid rgba(0,229,142,0.16);
+  border-radius: 24px;
+  padding: 30px 44px 26px;
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    0 0 40px rgba(0,229,142,0.18);
+  animation: cd-proonb-cardin .7s cubic-bezier(.2,.8,.2,1) both;
+}
+.cd-proonb-card::before {
+  content: "";
+  position: absolute; left: 24px; right: 24px; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,142,0.45), transparent);
+}
+@keyframes cd-proonb-cardin {
+  0%   { opacity: 0; transform: translateY(14px) scale(.985); }
+  100% { opacity: 1; transform: none; }
+}
+
+.cd-proonb-headrow {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin-bottom: 14px;
+}
+.cd-proonb-success {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #00f29a 0%, #00cf7e 100%);
+  display: grid; place-items: center;
+  color: #04140d;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 14px 30px rgba(0,229,142,0.35),
+    0 0 60px rgba(0,229,142,0.35);
+  animation: cd-proonb-pop .55s cubic-bezier(.2,1.4,.4,1) .15s both;
+}
+@keyframes cd-proonb-pop {
+  0%   { transform: scale(.4); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.cd-proonb-success svg { width: 24px; height: 24px; display: block; }
+
+.cd-proonb-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,229,142,0.32);
+  background: rgba(0,229,142,0.06);
+  color: #5cf2b6;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.cd-proonb-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #00e58e; box-shadow: 0 0 10px #00e58e;
+}
+
+.cd-proonb-head {
+  margin: 6px 0 12px;
+  text-align: center;
+  font-size: 50px;
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+}
+.cd-proonb-line { display: block; }
+.cd-proonb-accent {
+  color: #00e58e;
+  text-shadow: 0 0 30px rgba(0,229,142,0.35);
+}
+.cd-proonb-lede {
+  margin: 0 auto 22px;
+  text-align: center;
+  font-size: 14.5px;
+  color: #8b9a93;
+  max-width: 62ch;
+  line-height: 1.5;
+}
+
+.cd-proonb-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.cd-proonb-feature {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 14px;
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.005));
+  cursor: default;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+  animation: cd-proonb-rowin .5s cubic-bezier(.2,.8,.2,1) both;
+}
+.cd-proonb-feature:nth-child(1) { animation-delay: .24s; }
+.cd-proonb-feature:nth-child(2) { animation-delay: .28s; }
+.cd-proonb-feature:nth-child(3) { animation-delay: .32s; }
+.cd-proonb-feature:nth-child(4) { animation-delay: .36s; }
+.cd-proonb-feature:nth-child(5) { animation-delay: .40s; }
+.cd-proonb-feature:nth-child(6) { animation-delay: .44s; }
+.cd-proonb-feature:nth-child(7) { animation-delay: .48s; }
+.cd-proonb-feature:nth-child(8) { animation-delay: .52s; }
+.cd-proonb-feature:nth-child(9) { animation-delay: .56s; }
+@keyframes cd-proonb-rowin {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
+}
+.cd-proonb-feature:hover,
+.cd-proonb-feature:focus-visible {
+  outline: none;
+  border-color: rgba(0,229,142,0.32);
+  background: linear-gradient(180deg, rgba(0,229,142,0.07), rgba(0,229,142,0.02));
+  box-shadow:
+    0 0 0 1px rgba(0,229,142,0.18) inset,
+    0 10px 30px rgba(0,229,142,0.10);
+  transform: translateY(-1px);
+}
+.cd-proonb-ficon {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  background: rgba(0,229,142,0.08);
+  border: 1px solid rgba(0,229,142,0.22);
+  color: #00e58e;
+  transition: background .2s ease, box-shadow .2s ease;
+}
+.cd-proonb-feature:hover .cd-proonb-ficon,
+.cd-proonb-feature:focus-visible .cd-proonb-ficon {
+  background: rgba(0,229,142,0.16);
+  box-shadow: 0 0 22px rgba(0,229,142,0.35);
+}
+.cd-proonb-ficon svg { display: block; width: 17px; height: 17px; }
+.cd-proonb-flabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #eaf3ee;
+  letter-spacing: -0.005em;
+}
+.cd-proonb-check {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 17px; height: 17px;
+  color: #00e58e;
+  opacity: .9;
+}
+
+/* Feature tooltip — pops above the tile on hover / keyboard focus. */
+.cd-proonb-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 260px; max-width: 90vw;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: #0b1213;
+  border: 1px solid rgba(0,229,142,0.32);
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.5),
+    0 0 30px rgba(0,229,142,0.18);
+  color: #e9f2ee;
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 30;
+  text-align: left;
+}
+.cd-proonb-tip-title {
+  display: block;
+  font-weight: 700;
+  color: #00e58e;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.cd-proonb-tip::after {
+  content: "";
+  position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0,229,142,0.32);
+}
+.cd-proonb-feature:hover .cd-proonb-tip,
+.cd-proonb-feature:focus-visible .cd-proonb-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* Edge columns — anchor tooltips inward so they don't clip the card. */
+.cd-proonb-features .cd-proonb-feature:nth-child(3n) .cd-proonb-tip { left: auto; right: 0; transform: translateY(4px); }
+.cd-proonb-features .cd-proonb-feature:nth-child(3n) .cd-proonb-tip::after { left: auto; right: 20px; transform: none; }
+.cd-proonb-features .cd-proonb-feature:hover.cd-proonb-feature:nth-child(3n) .cd-proonb-tip,
+.cd-proonb-features .cd-proonb-feature:focus-visible.cd-proonb-feature:nth-child(3n) .cd-proonb-tip { transform: translateY(0); }
+.cd-proonb-features .cd-proonb-feature:nth-child(3n+1) .cd-proonb-tip { left: 0; transform: translateY(4px); }
+.cd-proonb-features .cd-proonb-feature:nth-child(3n+1) .cd-proonb-tip::after { left: 20px; transform: none; }
+.cd-proonb-features .cd-proonb-feature:hover.cd-proonb-feature:nth-child(3n+1) .cd-proonb-tip,
+.cd-proonb-features .cd-proonb-feature:focus-visible.cd-proonb-feature:nth-child(3n+1) .cd-proonb-tip { transform: translateY(0); }
+
+.cd-proonb-ctarow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+.cd-proonb-meta {
+  display: flex; flex-direction: column; gap: 3px;
+  color: #8b9a93;
+  font-size: 12px;
+}
+.cd-proonb-meta-top {
+  color: #fff; font-weight: 700; font-size: 13.5px; letter-spacing: -0.005em;
+}
+.cd-proonb-meta-row { display: inline-flex; align-items: center; gap: 7px; }
+.cd-proonb-meta-row svg { width: 13px; height: 13px; color: #00e58e; }
+
+.cd-proonb-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cd-proonb-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border-radius: 13px;
+  border: 1px solid rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, #00f29a 0%, #00c279 100%);
+  color: #04140d;
+  font-weight: 800;
+  font-size: 14.5px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.5) inset,
+    0 -2px 0 rgba(0,0,0,0.18) inset,
+    0 20px 40px rgba(0,229,142,0.28),
+    0 0 0 6px rgba(0,229,142,0.08);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.cd-proonb-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.55) inset,
+    0 -2px 0 rgba(0,0,0,0.18) inset,
+    0 24px 50px rgba(0,229,142,0.42),
+    0 0 0 8px rgba(0,229,142,0.12);
+}
+.cd-proonb-btn:active { transform: translateY(0); }
+.cd-proonb-arrow { width: 18px; height: 18px; transition: transform .2s ease; }
+.cd-proonb-btn:hover .cd-proonb-arrow { transform: translateX(3px); }
+.cd-proonb-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 9px;
+  padding: 13px 18px;
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: transparent;
+  color: #e9f2ee;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease;
+  font-family: inherit;
+}
+.cd-proonb-btn-ghost:hover {
+  border-color: rgba(0,229,142,0.32);
+  background: rgba(0,229,142,0.04);
+}
+.cd-proonb-btn-ghost svg { display: block; }
+
+/* Narrower windows — fall back to a 2-column grid + smaller hero. */
+@media (max-width: 900px) {
+  .cd-proonb-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cd-proonb-head { font-size: 40px; }
+  .cd-proonb-features .cd-proonb-feature:nth-child(3n) .cd-proonb-tip,
+  .cd-proonb-features .cd-proonb-feature:nth-child(3n+1) .cd-proonb-tip {
+    left: 50%; right: auto; transform: translateX(-50%) translateY(4px);
+  }
+  .cd-proonb-features .cd-proonb-feature:nth-child(3n) .cd-proonb-tip::after,
+  .cd-proonb-features .cd-proonb-feature:nth-child(3n+1) .cd-proonb-tip::after {
+    left: 50%; right: auto; transform: translateX(-50%);
+  }
+}
+
+/* Search bar in locked state — input is disabled, whole row is clickable
+   to open the paywall. Lock icon replaces the shortcut indicator. */
+.cd-search.locked {
+  cursor: pointer;
+  opacity: .85;
+}
+.cd-search.locked .cd-search-input {
+  cursor: pointer;
+  pointer-events: none;
+  color: var(--cd-dim);
+}
+.cd-search-lock {
+  width: 13px; height: 13px;
+  color: var(--cd-dim);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+/* Recently Used in locked (Free + paywall) state. The strip keeps its full
+   physical dimensions — same header, same row of placeholder tiles — so the
+   panel doesn't reflow between Free and Pro. The whole section becomes a
+   click target that opens the paywall, and the right-side action slot holds
+   a small FREE chip in place of the Clear button. */
+.cd-recent--locked { cursor: pointer; }
+.cd-recent--locked:focus, .cd-recent--locked:focus-visible { outline: 0; }
+.cd-recent--locked .cd-rtile { opacity: .08; }
+.cd-recent--locked:hover .cd-rtile { opacity: .14; }
+
+/* EffectPresetPicker — modal that lists every user-saved preset from
+   Premiere's .prfpset. Reuses .cd-devices-modal positioning/scrim. */
+.cd-effect-picker { width: min(540px, calc(100vw - 48px)); max-height: 78vh; display: flex; flex-direction: column; }
+.cd-effect-picker .cd-paywall-input { margin-top: 14px; }
+.cd-effect-picker-list {
+  margin-top: 14px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+}
+.cd-effect-picker-section {
+  font: 500 9.5px/1.2 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cd-dim);
+  margin: 12px 0 4px 4px;
+}
+.cd-effect-picker-section:first-child { margin-top: 0; }
+.cd-effect-picker-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.02);
+  border: .5px solid var(--cd-line2);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.cd-effect-picker-row:hover {
+  background: rgba(255,255,255,.05);
+  border-color: color-mix(in srgb, var(--cd-accent) 40%, var(--cd-line2));
+}
+.cd-effect-picker-row:active { transform: scale(.99); }
+.cd-effect-picker-name {
+  font: 600 13px/1.3 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  color: var(--cd-fg);
+}
+.cd-effect-picker-sub {
+  font: 500 11px/1.3 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  color: var(--cd-dim);
+}
+/* Effect-kind card icon (sparkles) — tinted mint to match the brand
+   accent, sized to match other .cd-tile-clip-ico glyphs. */
+.cd-tile-clip-ico--fx { color: color-mix(in srgb, #00ff95 80%, #fff 20%); }
+
+/* Live match counter shown right under the picker's search input.
+   Updates on every keystroke so the user can tell the filter is
+   responding even before they scroll the results list. */
+.cd-effect-picker-count {
+  margin-top: 8px;
+  font: 500 10.5px/1.2 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  letter-spacing: .02em;
+  color: var(--cd-dim);
+}
+
+/* ── App update banner ────────────────────────────────────────────────
+   Fixed pill across the top of the overlay window when an update is
+   available. Sits above the topbar but below any modal scrim so the
+   user can still open the paywall / prefs without the banner
+   blocking the dialog. */
+.cd-update-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 38;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px 10px 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(0, 255, 149, .12), rgba(0, 255, 149, .04));
+  border: .5px solid rgba(0, 255, 149, .35);
+  box-shadow:
+    0 12px 30px -10px rgba(0, 0, 0, .55),
+    0 0 0 1px rgba(0, 255, 149, .05) inset;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  animation: cd-update-banner-slide .22s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes cd-update-banner-slide {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.cd-update-banner-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #E7E9EE;
+  font: 500 12px/1.2 -apple-system, "Inter", system-ui, sans-serif;
+}
+.cd-update-banner-label  { color: #00ff95; font-weight: 700; }
+.cd-update-banner-version { color: #FFF; font-weight: 600; }
+.cd-update-banner-notes {
+  color: rgba(231, 233, 238, .65);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cd-update-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cd-update-banner-snooze {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(231, 233, 238, .65);
+  font: 500 11px/1 -apple-system, "Inter", system-ui, sans-serif;
+  cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.cd-update-banner-snooze:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+.cd-update-banner-cta {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #00ff95 0%, #00d97c 100%);
+  color: #04130A;
+  font: 700 11px/1 -apple-system, "Inter", system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  box-shadow: 0 6px 16px -6px rgba(0, 255, 149, .55);
+}
+.cd-update-banner-cta:hover  { transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(0, 255, 149, .7); }
+.cd-update-banner-cta:active { transform: translateY(0); }
+
+/* ── Update progress modal ────────────────────────────────────────────
+   Shown while the .pkg downloads + verifies + opens. Reuses the paywall
+   scrim for the dim background. */
+.cd-update-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 48px));
+  z-index: 51;
+  padding: 24px 26px 22px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #0d1117 0%, #06080d 100%);
+  border: .5px solid rgba(0, 255, 149, .18);
+  box-shadow:
+    0 28px 70px -16px rgba(0, 0, 0, .8),
+    0 0 0 1px rgba(0, 255, 149, .04) inset;
+  color: #E7E9EE;
+  animation: cd-onboarding-pop .2s cubic-bezier(.2, .8, .2, 1);
+}
+.cd-update-modal-title {
+  margin: 0 0 14px;
+  font: 700 18px/1.2 -apple-system, "Inter", system-ui, sans-serif;
+  letter-spacing: -.01em;
+}
+.cd-update-modal-bar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  overflow: hidden;
+  margin: 0 0 14px;
+}
+.cd-update-modal-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #00ff95, #00d97c);
+  transition: width .15s linear;
+}
+.cd-update-modal-hint {
+  margin: 0;
+  font: 400 12px/1.5 -apple-system, "Inter", system-ui, sans-serif;
+  color: rgba(231, 233, 238, .65);
+}
+.cd-update-modal-error {
+  margin: 0 0 10px;
+  font: 500 12px/1.5 -apple-system, "Inter", system-ui, sans-serif;
+  color: #ff6b6b;
+}
+.cd-update-modal-close {
+  margin-top: 4px;
+  padding: 8px 14px;
+  border: .5px solid var(--cd-line2);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cd-text);
+  font: 600 11px/1 -apple-system, "Inter", system-ui, sans-serif;
+  cursor: pointer;
+}
+.cd-update-modal-close:hover { background: rgba(255, 255, 255, .06); }
+
+/* ── Plugin card install / uninstall affordances ──────────────────────
+   The wrap exists so the uninstall button can absolute-position over
+   the card's top-right corner without inheriting button-inside-button
+   focus semantics. */
+.cd-plugin-card-wrap {
+  position: relative;
+}
+.cd-plugin-card-uninstall {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: .5px solid rgba(255, 255, 255, .1);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .55);
+  color: rgba(231, 233, 238, .7);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s, background .12s, color .12s, border-color .12s;
+  z-index: 1;
+}
+.cd-plugin-card-wrap:hover .cd-plugin-card-uninstall { opacity: 1; }
+.cd-plugin-card-uninstall:hover {
+  background: rgba(255, 80, 80, .15);
+  border-color: rgba(255, 80, 80, .4);
+  color: #ff8585;
+}
+/* Install progress bar overlay on the card art. */
+.cd-plugin-card-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(0, 0, 0, .55);
+  overflow: hidden;
+}
+.cd-plugin-card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff95, #00d97c);
+  transition: width .15s linear;
+}
+.cd-plugin-card--installing { opacity: .85; }
+.cd-plugin-card--available .cd-plugin-card-cta {
+  color: #00ff95;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   V2 "Tactile" tile skin — copied verbatim from the Claude Design bundle
+   (clip-deck-redesign/project/index.html). Adapted to `.v2-tile`
+   so the existing SlotTile root keeps all its drag/drop/click handlers.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* A deck/tool global hotkey can redraw the panel while the BrowserWindow is
+   still hidden. During that one route swap, remove visual transitions on the
+   elements that would otherwise reveal a visible "old deck → new deck" switch
+   when the window appears or when the panel is already open. */
+.cd-panel.cd-instant-nav .cd-grid,
+.cd-panel.cd-instant-nav .cd-tile,
+.cd-panel.cd-instant-nav .cd-rtile,
+.cd-panel.cd-instant-nav .cd-result-tile,
+.cd-panel.cd-instant-nav .v2-tile,
+.cd-panel.cd-instant-nav .cd-tag,
+.cd-panel.cd-instant-nav .cd-side-item,
+.cd-panel.cd-instant-nav .cd-side-tool-item {
+  transition: none !important;
+  animation: none !important;
+}
+
+.v2-tile {
+  /* Override the legacy 3fr/1fr grid so the V2 absolute-positioned
+     children (chip, typebadge, transition-vis, name) lay out cleanly.
+     Sized for the Clip Deck panel's typical tile (~100–130px) rather
+     than the design's 220px ideal — same Claude V2 look, scaled to
+     fit. */
+  display: block;
+  position: relative;
+  background: linear-gradient(180deg, #232328, #181819);
+  border: 1px solid rgba(0,0,0,0.7);
+  border-radius: 8px;
+  color: #e8e8eb;
+  font: 600 11px/1.2 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 1px 2px rgba(0,0,0,0.4),
+    0 6px 18px rgba(0,0,0,0.22);
+  transition: transform 80ms ease, box-shadow 140ms ease, filter 140ms ease, border-color 140ms ease;
+}
+.v2-tile:hover,
+.v2-tile.on {
+  filter: brightness(1.18);
+  /* Pronounced lift + slight scale-up — same translateY(-2px) scale(1.012)
+     the main grid's .cd-tile.on always intended. Applying it here on
+     .v2-tile.on unifies the hover treatment across every V2 tile surface:
+     the main deck (cd-tile.v2-tile), the recent strip (cd-rtile.v2-tile),
+     and search-result tiles (cd-result-tile.v2-tile). Before, the recent
+     strip's .cd-rtile.on declared a flatter translateY(-1px) (no scale)
+     and the source-order tie with this rule meant the lift felt
+     noticeably weaker on Recently Used vs the main panel. */
+  transform: translateY(-2px) scale(1.012);
+  border-color: color-mix(in oklch, var(--accent) 75%, rgba(0,0,0,0.7));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 2px 4px rgba(0,0,0,0.5),
+    0 12px 32px rgba(0,0,0,0.32),
+    0 0 0 2px color-mix(in oklch, var(--accent) 65%, transparent),
+    0 0 38px color-mix(in oklch, var(--accent) 38%, transparent);
+}
+.v2-tile:active { transform: translateY(0); }
+.v2-tile:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+/* Per-type accent — drives hover ring, applied state, and signatures. */
+.v2-tile--fx               { --accent: oklch(0.74 0.14 245); }
+.v2-tile--transition       { --accent: oklch(0.86 0.16 95);  }
+.v2-tile--audio-transition { --accent: oklch(0.85 0.17 125); }
+.v2-tile--audio            { --accent: oklch(0.80 0.14 180); }
+.v2-tile--audio-fx         { --accent: oklch(0.80 0.13 215); }
+.v2-tile--timeline-clip    { --accent: oklch(0.72 0.17 295); }
+.v2-tile--image            { --accent: oklch(0.72 0.17 340); }
+.v2-tile--video            { --accent: oklch(0.74 0.15 45);  }
+.v2-tile--saved-attributes { --accent: oklch(0.70 0.17 22);  }
+.v2-tile--saved-transition { --accent: oklch(0.74 0.18 55);  }
+.v2-tile--empty            { --accent: oklch(0.74 0.04 260); }
+
+/* Shortcut chip — top-left. Copied from the Claude Design's pill shape:
+   rounded rect with backdrop blur, uppercase mono digit, semi-translucent
+   dark fill. Sized for the Clip Deck panel's typical tile. */
+.v2-tile .v2-chip,
+.cd-rtile.v2-tile .v2-chip {
+  position: absolute; top: 6px; left: 6px;
+  min-width: 18px; height: 18px;
+  padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.42);
+  color: #c9c9cf;
+  border-radius: 4px;
+  font: 600 11px/1 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 3;
+  pointer-events: none;
+}
+.v2-tile .v2-chip--ghost,
+.cd-rtile.v2-tile .v2-chip--ghost {
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.08);
+  color: #5a5a60;
+}
+/* Recent strip tiles are smaller — scale the chip down a touch so it
+   doesn't dominate the tile. */
+.cd-rtile.v2-tile .v2-chip {
+  top: 4px; left: 4px;
+  min-width: 15px; height: 15px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9.5px;
+}
+
+/* Generic type badge (top-right). */
+.v2-tile .v2-typebadge {
+  position: absolute; top: 6px; right: 6px;
+  color: color-mix(in oklch, var(--accent) 80%, #6c6c72);
+  display: inline-flex;
+  z-index: 3;
+  pointer-events: none;
+}
+.v2-tile .v2-typebadge svg {
+  width: 10px; height: 10px;
+}
+
+/* ─── FX tile — solid BLUE body ───────────────────────────────────── */
+.v2-tile--fx {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg,
+    oklch(0.44 0.13 245) 0%,
+    oklch(0.31 0.12 248) 100%);
+  border-color: oklch(0.22 0.10 250);
+  color: #eaf1ff;
+}
+.v2-tile--fx .v2-chip {
+  background: rgba(0,0,0,0.32);
+  color: rgba(255,255,255,0.95);
+}
+.v2-tile--fx .v2-typebadge { color: rgba(255,255,255,0.75); }
+.v2-tile--fx .v2-effect-vis {
+  position: absolute;
+  left: 0; right: 0;
+  top: 46%;
+  height: 44%;
+  transform: translate(0, -50%);
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.v2-tile--fx .v2-effect-glyph {
+  height: 92%;
+  width: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.v2-tile--fx .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — anything past the right edge is hidden. Hover
+     starts a marquee on `.v2-name-text` so the rest can be scanned. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* ─── Saved Attributes — DEEP RED body ─────────────────────────────── */
+.v2-tile--saved-attributes {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg, #7a1f15 0%, #4d0c05 100%);
+  border-color: #2d0500;
+  color: #ffe6df;
+}
+.v2-tile--saved-attributes .v2-chip {
+  background: rgba(0,0,0,0.32);
+  color: rgba(255,255,255,0.95);
+}
+.v2-tile--saved-attributes .v2-typebadge { color: rgba(255,255,255,0.75); }
+.v2-tile--saved-attributes .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — anything past the right edge is hidden. Hover
+     starts a marquee on `.v2-name-text` so the rest can be scanned. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* ─── Saved Transition — ORANGE body ──────────────────────────────── */
+.v2-tile--saved-transition {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg, #d56a18 0%, #a4470a 100%);
+  border-color: #5d2603;
+  color: #fff1e3;
+}
+.v2-tile--saved-transition .v2-chip {
+  background: rgba(0,0,0,0.32);
+  color: rgba(255,255,255,0.95);
+}
+.v2-tile--saved-transition .v2-typebadge { color: rgba(255,255,255,0.75); }
+.v2-tile--saved-transition .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — see other .v2-name variants for rationale. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* ─── Audio Effect — CYAN body ─────────────────────────────────────── */
+.v2-tile--audio-fx {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg,
+    oklch(0.62 0.13 215) 0%,
+    oklch(0.48 0.13 218) 100%);
+  border-color: oklch(0.32 0.11 218);
+  color: #eaf5fb;
+}
+.v2-tile--audio-fx .v2-chip {
+  background: rgba(0,0,0,0.32);
+  color: rgba(255,255,255,0.95);
+}
+.v2-tile--audio-fx .v2-typebadge { color: rgba(255,255,255,0.75); }
+.v2-tile--audio-fx .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — anything past the right edge is hidden. Hover
+     starts a marquee on `.v2-name-text` so the rest can be scanned. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* ─── Audio Transition — LIME body ─────────────────────────────────── */
+.v2-tile--audio-transition {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg,
+    oklch(0.78 0.18 125) 0%,
+    oklch(0.66 0.18 122) 100%);
+  border-color: oklch(0.52 0.16 122);
+  color: #0f2b00;
+}
+.v2-tile--audio-transition .v2-chip {
+  background: rgba(15,43,0,0.22);
+  color: #0f2b00;
+}
+.v2-tile--audio-transition .v2-typebadge { color: rgba(15,43,0,0.55); }
+.v2-tile--audio-transition .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — anything past the right edge is hidden. Hover
+     starts a marquee on `.v2-name-text` so the rest can be scanned. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* ─── Timeline Saved Clip — PURPLE body ────────────────────────────── */
+.v2-tile--timeline-clip {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg,
+    oklch(0.46 0.16 295) 0%,
+    oklch(0.34 0.15 298) 100%);
+  border-color: oklch(0.26 0.12 298);
+  color: #f0e8ff;
+}
+.v2-tile--timeline-clip .v2-chip {
+  background: rgba(0,0,0,0.32);
+  color: rgba(255,255,255,0.95);
+}
+.v2-tile--timeline-clip .v2-typebadge { color: rgba(255,255,255,0.75); }
+.v2-tile--timeline-clip .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — anything past the right edge is hidden. Hover
+     starts a marquee on `.v2-name-text` so the rest can be scanned. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* ─── Transition — YELLOW body ─────────────────────────────────────── */
+.v2-tile--transition {
+  padding: 7px 8px 8px;
+  background: linear-gradient(180deg,
+    oklch(0.78 0.15 92) 0%,
+    oklch(0.66 0.16 88) 100%);
+  border-color: oklch(0.55 0.14 85);
+  color: #2b1f02;
+}
+.v2-tile--transition .v2-chip {
+  background: rgba(40,28,0,0.28);
+  color: #2b1f02;
+}
+.v2-tile--transition .v2-typebadge { color: rgba(40,28,0,0.55); }
+.v2-tile--transition .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* Single-line clip — anything past the right edge is hidden. Hover
+     starts a marquee on `.v2-name-text` so the rest can be scanned. */
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: inherit;
+}
+
+/* Shared icon-glyph centering for transition, audio-transition,
+   audio-fx, saved-attributes, saved-transition, timeline-clip. */
+.v2-tile--transition .v2-transition-vis,
+.v2-tile--audio-transition .v2-transition-vis,
+.v2-tile--audio-fx .v2-transition-vis,
+.v2-tile--saved-attributes .v2-transition-vis,
+.v2-tile--saved-transition .v2-transition-vis,
+.v2-tile--timeline-clip .v2-transition-vis {
+  position: absolute;
+  left: 0; right: 0;
+  top: 46%;
+  height: 44%;
+  transform: translate(0, -50%);
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.v2-tile .v2-transition-glyph {
+  height: 100%;
+  width: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* Timeline-clip icon — slightly smaller than the other category icons. */
+.v2-tile--timeline-clip .v2-transition-glyph { height: 86%; }
+/* Audio FX icon — scaled down a touch. */
+.v2-tile--audio-fx .v2-transition-glyph { height: 84%; }
+/* Saved Attributes — nudge up-right so the star's mass doesn't visually
+   drag the icon to the lower-left of the tile. */
+.v2-tile--saved-attributes .v2-transition-glyph {
+  height: 94%;
+  transform: translate(6%, -5%);
+}
+/* Saved Transition — same nudge as Saved Attributes (the star sits in
+   the upper-right of this icon too, so the visual mass is identical). */
+.v2-tile--saved-transition .v2-transition-glyph {
+  height: 94%;
+  transform: translate(6%, -5%);
+}
+/* Drop shadow on the category icons so they pop off the tile body. */
+.v2-tile--fx .v2-effect-glyph,
+.v2-tile--transition .v2-transition-glyph,
+.v2-tile--audio-fx .v2-transition-glyph,
+.v2-tile--audio-transition .v2-transition-glyph,
+.v2-tile--saved-attributes .v2-transition-glyph,
+.v2-tile--saved-transition .v2-transition-glyph {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35))
+          drop-shadow(0 6px 14px rgba(0,0,0,0.25));
+}
+
+/* ─── Audio (file/capture) — dark body with waveform fill ──────────── */
+.v2-tile--audio { padding: 7px 8px; }
+.v2-tile--audio .v2-wave-wrap {
+  position: absolute;
+  left: 8px; right: 8px;
+  top: 26px;
+  bottom: 22px;
+  color: color-mix(in oklch, var(--accent) 75%, transparent);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.v2-tile--audio .v2-waveform {
+  width: 100%; height: 100%;
+  display: block;
+}
+.v2-tile--audio .v2-name {
+  position: absolute; left: 8px; right: 8px; bottom: 6px;
+  color: #e8e8eb;
+  font: 600 8.5px/1.2 'Inter', sans-serif;
+  letter-spacing: -0.005em;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+/* ─── Media tile (image / video) — thumbnail fills, scrim for legibility ─ */
+.v2-tile--image,
+.v2-tile--video {
+  color: #ffffff;
+}
+.v2-tile .v2-thumb {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a2e;
+  filter: saturate(0.85);
+}
+/* `.v2-thumb--contain` — for PNGs (likely transparent backgrounds).
+   Scales the image to fit centered with no crop, lets the tile's
+   accent body gradient show around it (so a logo on a blue Effect
+   tile reads as "Effect-themed logo"), and skips the slight
+   saturation drop the photo variant uses. The scrim is suppressed
+   on contain mode because the body is already dark enough for the
+   chip / name overlays to read cleanly. */
+.v2-tile .v2-thumb.v2-thumb--contain {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  filter: none;
+  /* Pull the icon inward a touch so it doesn't kiss the card edges. */
+  inset: 12% 14%;
+}
+.v2-tile .v2-thumb-scrim {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.78) 100%);
+  pointer-events: none;
+}
+
+/* Custom-color tint over the full-bleed thumb. Image / video tiles
+   otherwise cover the tile body entirely, so the user's right-click
+   color choice only shows on the 1.5px border — making the rest of
+   the card look untinted. This pseudo-element paints the chosen color
+   gradient on TOP of the thumb at moderate opacity, blended so the
+   thumb's silhouette stays readable while the card visually adopts
+   the color (same end-state as icon-based tile types). */
+.v2-tile--custom-color .v2-thumb::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, var(--cd-tile-custom-top, transparent) 0%, var(--cd-tile-custom-bot, transparent) 100%);
+  opacity: 0.62;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+/* Contain-mode thumbs (PNGs) already let the colored body show
+   around the artwork, so the multiply layer would just darken the
+   logo. Skip it there. */
+.v2-tile--custom-color .v2-thumb.v2-thumb--contain::after {
+  display: none;
+}
+/* Duration chip — top-right on video + audio tiles. Mirrors the chip
+   pill (mono digit on a translucent dark backdrop) and sits in the
+   slot the typebadge would otherwise occupy. */
+.v2-tile .v2-duration {
+  position: absolute; top: 5px; right: 5px;
+  height: 11px;
+  padding: 0 3px;
+  display: inline-flex; align-items: center;
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.95);
+  font: 600 7.5px/1 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.03em;
+  border-radius: 2px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 3;
+  pointer-events: none;
+}
+/* Recent strip tiles are smaller — scale the chip down further so it
+   doesn't dominate. */
+.cd-rtile.v2-tile .v2-duration {
+  top: 3px; right: 3px;
+  height: 9px;
+  padding: 0 2.5px;
+  font-size: 6.5px;
+  border-radius: 1.5px;
+}
+.v2-tile .v2-name--media {
+  position: absolute; left: 7px; right: 7px; bottom: 5px;
+  color: #ffffff;
+  font: 600 8.5px/1.2 'Inter', sans-serif;
+  letter-spacing: -0.005em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  z-index: 2;
+}
+.v2-tile--image .v2-typebadge,
+.v2-tile--video .v2-typebadge {
+  color: rgba(255,255,255,0.9);
+}
+.v2-tile .v2-play {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  color: #ffffff;
+  display: inline-flex; align-items: center; justify-content: center;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.18);
+  z-index: 3;
+  transition: background 140ms ease;
+  pointer-events: none;
+}
+.v2-tile .v2-play svg {
+  width: 10px; height: 10px;
+}
+.v2-tile--video:hover .v2-play { background: rgba(0,0,0,0.55); }
+
+/* ─── Empty / unassigned ───────────────────────────────────────────── */
+.v2-tile--empty {
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.08);
+  box-shadow: none;
+  color: #5a5a60;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  justify-items: center;
+  padding: 6px;
+  /* Empty slots should never inherit the shared populated-card glow.
+     The React-driven `.on` class can outlive `:hover` by a frame on
+     mouseleave, so define both states here and avoid box-shadow
+     transitions that read as an after-glow flicker. */
+  transition: border-color 80ms ease, background 80ms ease, color 80ms ease;
+}
+.v2-tile--empty:hover,
+.v2-tile--empty.on {
+  border-style: solid;
+  border-color: color-mix(in oklch, var(--accent) 32%, rgba(255,255,255,0.08));
+  color: color-mix(in oklch, var(--accent) 55%, #5a5a60);
+  filter: none;
+  transform: translateY(0);
+  background: color-mix(in srgb, var(--accent) 1.5%, transparent);
+  box-shadow: none;
+}
+.v2-tile--empty .v2-empty-hint {
+  grid-row: 1; grid-column: 1;
+  align-self: center; justify-self: center;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font: 500 9px/1 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
+  pointer-events: none;
+}
+.v2-tile--empty .v2-empty-hint svg {
+  width: 14px; height: 14px;
+}
+.v2-tile--empty .v2-empty-drop {
+  grid-row: 2; grid-column: 1;
+  font: 500 8.5px/1.2 'Inter', sans-serif;
+  color: inherit;
+  opacity: 0.7;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Name edit input — mirrors the static .v2-name bounding box exactly
+   so toggling rename mode doesn't visibly shift the text or change
+   the surrounding layout. Position (left/right/bottom), font, and
+   inset padding are matched to the static name's per-tile-type
+   geometry below; height stays `auto` and width is derived from
+   left+right (not 100%) so the legacy .cd-tile-name-edit's
+   `height: 100%` + `width: 100%` over-constraints are neutralized. */
+.v2-tile .v2-name-edit {
+  position: absolute;
+  /* Default geometry matches .v2-name (non-media tile types). The
+     image/video / media-tile override sits below. */
+  left: 8px; right: 8px; bottom: 6px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  z-index: 4;
+  background: rgba(0,0,0,0.42);
+  border: 0;
+  border-radius: 3px;
+  /* Vertical padding kept tiny so the caret has a hair of breathing
+     room without enlarging the box beyond the static name's height.
+     Horizontal padding is 0 so the text starts at exactly the same
+     x position as the static name. */
+  padding: 1px 0;
+  color: inherit;
+  font: 600 8.5px/1.2 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+  text-align: left;
+  outline: 0;
+}
+/* Image / video tiles use .v2-name--media with tighter geometry —
+   mirror that for the input on those tile types so the rename UI
+   doesn't jump 1-2px relative to the static label. */
+.v2-tile--image .v2-name-edit,
+.v2-tile--video .v2-name-edit {
+  left: 7px; right: 7px; bottom: 5px;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ── Hover marquee on long names ─────────────────────────────────────
+   Default: 2-line `-webkit-line-clamp`. `.v2-name--single` (applied
+   by JS when the title is too long to fit in 2 lines) collapses to a
+   single clipped line. On hover, the outer container is forced to
+   single-line nowrap and the inner `.v2-name-text` is translated
+   left over 7s so the user can scan the full title. Animation
+   alternates so the text eases back to its start position on the
+   return leg — no jump-cuts. */
+
+/* The inner text span — sits flush inside the clipped outer. Inline-
+   block so it has its own measurable width that translateX can pivot
+   off of. */
+.v2-tile .v2-name-text,
+.cd-rtile.v2-tile .v2-name-text {
+  display: inline-block;
+  vertical-align: top;
+  max-width: 100%;
+}
+
+/* Hover state — outer stays single-line, marquee runs on the inner. */
+.v2-tile:hover .v2-name,
+.v2-tile.on .v2-name,
+.cd-rtile.v2-tile:hover .v2-name,
+.cd-rtile.v2-tile.on .v2-name {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.v2-tile:hover .v2-name-text,
+.v2-tile.on .v2-name-text,
+.cd-rtile.v2-tile:hover .v2-name-text,
+.cd-rtile.v2-tile.on .v2-name-text {
+  /* Plays once and stays at the end position so the right edge of the
+     title lines up with the right edge of the tile. `--marquee-end`
+     is set by V2Name's ResizeObserver to the exact overflow distance
+     in negative pixels — short titles get 0px (no movement); long
+     titles scroll exactly enough to reveal their last character. */
+  animation: v2-name-marquee 1.4s linear 0.15s 1 forwards;
+}
+@keyframes v2-name-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(var(--marquee-end, 0px)); }
+}

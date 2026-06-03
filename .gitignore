@@ -1,0 +1,22 @@
+# OS / editor cruft
+.DS_Store
+**/.DS_Store
+
+# Local dev tooling (Claude Code config + dev server logs)
+.claude/
+
+# Mac/Windows installers — served from GitHub Releases, NOT bundled with the
+# site. They also exceed GitHub's 100 MB and Cloudflare Pages' 25 MB file caps.
+downloads/*.pkg
+downloads/*.dmg
+downloads/*.zip
+downloads/*.exe
+
+# Unused local assets (not referenced anywhere by the site) — keep them off the
+# deploy so the site stays lean.
+CLIP DECK SAMPLE LIBRARY.cdk
+thumbnail samples images/
+
+# Back-end source — already deployed as a live Google Apps Script; no reason to
+# serve it publicly from the landing page.
+apps-script.gs

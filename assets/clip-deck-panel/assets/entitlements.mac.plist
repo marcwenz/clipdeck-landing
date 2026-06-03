@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Hardened-runtime entitlements for the Clip Deck main process.
+    Required for Apple notarization. Each entry below has a real
+    runtime reason — don't remove without testing on a fresh Mac.
+  -->
+
+  <!-- Electron's V8 JIT needs both of these to compile JavaScript at
+       runtime. Without them V8 fails to start under hardened runtime. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- Electron loads native node modules (webUtils, etc.) and the
+       Electron framework itself at runtime via dlopen. Library
+       validation must be disabled for these to load under hardened
+       runtime. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+
+  <!-- Clip Deck shells out to osascript to send keystrokes (Cmd+V),
+       click menu items (Edit > Paste, Paste Attributes), and detect
+       the frontmost app. All of these are AppleEvents-based. macOS
+       will still prompt the user for Automation permission on first
+       use; this entitlement is what makes that prompt LEGAL — without
+       it the prompt never appears and AppleEvents are blocked. -->
+  <key>com.apple.security.automation.apple-events</key>
+  <true/>
+
+  <!-- Allow DYLD environment variables. The renderer needs this for
+       Electron's debugging plumbing in some edge cases. Safe to leave
+       on for notarized apps. -->
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+</dict>
+</plist>

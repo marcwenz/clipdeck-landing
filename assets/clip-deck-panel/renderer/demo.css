@@ -1,0 +1,21 @@
+/* demo.css — landing-page panel overrides. Loaded AFTER styles.css so these
+   win without !important fights elsewhere. Two jobs, both per the brief:
+
+   1. Hide every Pro/Free plan badge. PlanBadge renders a single
+      `.cd-plan-badge` element (PRO / FREE / TESTING variants); the panel is
+      forced Pro, but the brief says no Pro badges anywhere — so hide them all.
+      `.cd-plan-badge-wrap` is hidden too (defensive; the live "Watch Demo
+      Tutorial" button lives in `.cd-prefs-badge-wrap`, which we leave alone).
+
+   2. On the Pixabay / YouTube / Utility marketing graphics, hide the action
+      row — both the "Upgrade to Pro" CTA and the "I already have Pro" link —
+      so the graphics read as a feature preview, not a sales prompt. */
+
+.cd-plan-badge,
+.cd-plan-badge-wrap {
+  display: none !important;
+}
+
+.cd-pixabay-paywall-actions {
+  display: none !important;
+}
