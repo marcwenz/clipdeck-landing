@@ -1862,3 +1862,169 @@ body.win-modal-open { overflow: hidden; }
   .wl-row { flex-direction: column; }
   .wl-submit { width: 100%; }
 }
+
+/* =============================================================
+   Pricing — ported from the in-app Clip Deck paywall "offer" view
+   (clipdeck/overlay/renderer/styles.css → .cd-paywall-modal--offer),
+   re-scoped to .pricing. Same mint-on-dark look as the panel.
+   ============================================================= */
+.pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-10);
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--space-20) var(--page-pad);
+}
+.pricing .section-title { text-align: center; }
+.pricing .cdp-offer {
+  width: 100%;
+  max-width: 1040px;
+  text-align: left;
+}
+
+/* ── 2-tier comparison (Free | Pro) — enlarged for the landing page ── */
+.pricing .cdp-tiers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+.pricing .cdp-tier {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  /* solid base under the subtle sheen so the page's timeline texture doesn't
+     show through — matches the in-app cards sitting on the modal's dark bg */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.004)), var(--bg);
+}
+/* Free card — subtle neutral-grey ring + glow, mirroring the Pro card's green
+   treatment but kept restrained so Pro still leads the eye. */
+.pricing .cdp-tier--free {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 18px 44px rgba(255, 255, 255, 0.04);
+}
+.pricing .cdp-tier--pro {
+  border-color: rgba(0, 229, 142, 0.42);
+  background:
+    linear-gradient(180deg, rgba(0, 229, 142, 0.08), rgba(0, 229, 142, 0.015) 42%, transparent),
+    var(--panel);
+  box-shadow:
+    0 0 0 1px rgba(0, 229, 142, 0.12) inset,
+    0 18px 44px rgba(0, 229, 142, 0.16);
+}
+.pricing .cdp-tier-badge {
+  position: absolute; top: 18px; right: 18px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #00e58e; color: #04140d;
+  box-shadow: 0 0 16px rgba(0, 229, 142, 0.55);
+}
+.pricing .cdp-tier-badge svg { width: 17px; height: 17px; }
+.pricing .cdp-tier-name { font: 800 24px/1 var(--font-display); color: #fff; }
+.pricing .cdp-tier-tagline { margin-top: 6px; font: 400 15px/1.3 var(--font-sans); color: #8b9a93; }
+.pricing .cdp-tier-price { display: flex; align-items: baseline; gap: 8px; margin: 20px 0; }
+.pricing .cdp-tier-price-amt { font: 800 46px/1 var(--font-display); letter-spacing: -0.03em; color: #fff; }
+.pricing .cdp-tier--pro .cdp-tier-price-amt { color: #00e58e; text-shadow: 0 0 24px rgba(0, 229, 142, 0.35); }
+.pricing .cdp-tier-price-unit { font: 500 14px/1.2 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; color: #6f7e78; letter-spacing: 0.01em; }
+.pricing .cdp-tier-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.pricing .cdp-tier-row {
+  position: relative;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 8px 10px; border-radius: 10px;
+  font: 600 16px/1.4 var(--font-sans);
+  color: #d6e2dc;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.pricing .cdp-tier--free .cdp-tier-row { color: #97a59f; }
+.pricing .cdp-tier--pro .cdp-tier-row { cursor: default; }
+.pricing .cdp-tier--pro .cdp-tier-row:hover {
+  background: rgba(0, 229, 142, 0.10);
+  box-shadow: 0 0 0 1px rgba(0, 229, 142, 0.22) inset;
+  color: #eaf3ee;
+}
+.pricing .cdp-tier-check { flex: 0 0 auto; width: 20px; height: 20px; color: #556665; display: grid; place-items: center; margin-top: 1px; }
+.pricing .cdp-tier-check svg { width: 20px; height: 20px; display: block; }
+.pricing .cdp-tier-check--pro { color: #00e58e; }
+.pricing .cdp-tier-check--plus { color: #00e58e; }
+.pricing .cdp-tier-everything { color: #eaf3ee; font-weight: 700; }
+.pricing .cdp-tier-core-title { font-weight: 700; color: #cfe0d8; }
+.pricing .cdp-tier-core-sub { margin: 4px 0 0 32px; padding: 0 10px 4px; font: 400 14px/1.5 var(--font-sans); color: #6f7e78; }
+.pricing .cdp-tier-tip {
+  position: absolute; left: 50%; bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+  width: 280px; max-width: 90vw;
+  padding: 13px 16px; border-radius: 12px;
+  background: #0b1213; border: 1px solid rgba(0, 229, 142, 0.32);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5), 0 0 26px rgba(0, 229, 142, 0.16);
+  color: #e9f2ee; font: 500 13px/1.5 var(--font-sans);
+  text-align: left; opacity: 0; pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease; z-index: 30;
+}
+.pricing .cdp-tier-tip-title { display: block; font: 700 11px/1 var(--font-display); color: #00e58e; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.pricing .cdp-tier-tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: rgba(0, 229, 142, 0.32); }
+.pricing .cdp-tier--pro .cdp-tier-row:hover .cdp-tier-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
+.pricing .cdp-tier-current {
+  margin-top: auto; align-self: flex-start;
+  padding: 10px 18px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #8b9a93;
+  font: 600 14px/1 var(--font-sans);
+}
+.pricing .cdp-tier-cta { margin-top: 28px; padding-top: 17px; padding-bottom: 17px; width: 100%; }
+
+/* CTA button */
+.pricing .cdp-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 12px;
+  padding: 17px 28px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, #00f29a 0%, #00c279 100%);
+  color: #04140d;
+  font: 800 17px/1 var(--font-sans);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.18) inset,
+    0 16px 32px rgba(0, 229, 142, 0.26),
+    0 0 0 5px rgba(0, 229, 142, 0.08);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+  white-space: nowrap;
+}
+.pricing .cdp-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.18) inset,
+    0 24px 50px rgba(0, 229, 142, 0.42),
+    0 0 0 8px rgba(0, 229, 142, 0.12);
+}
+.pricing .cdp-btn:active { transform: translateY(0); }
+.pricing .cdp-arrow { width: 20px; height: 20px; transition: transform .2s ease; }
+.pricing .cdp-btn:hover .cdp-arrow { transform: translateX(3px); }
+.pricing .cdp-price-tag { padding: 4px 12px; border-radius: 999px; background: rgba(4, 20, 13, 0.18); border: 1px solid rgba(4, 20, 13, 0.25); font: 700 14px/1 var(--font-sans); }
+
+/* Free card "Download" CTA — same green as the Pro button; pinned to the card
+   bottom so it aligns with the Pro CTA. */
+.pricing .cdp-tier--free .cdp-tier-cta { margin-top: auto; }
+.pricing .cdp-dl-ico { width: 19px; height: 19px; flex: 0 0 auto; }
+
+/* responsive: stack the tiers on narrow screens */
+@media (max-width: 880px) {
+  .pricing .cdp-tiers { grid-template-columns: 1fr; }
+  .pricing .cdp-offer { max-width: 520px; }
+  .pricing .cdp-tier { padding: 24px; }
+  .pricing .cdp-tier-price-amt { font-size: 40px; }
+}

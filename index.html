@@ -42,6 +42,7 @@
       <nav class="site-nav" aria-label="Primary">
         <a href="#how-it-works">How it works</a>
         <a href="#demo-video">Watch Demo</a>
+        <a href="#pricing">Pricing</a>
         <a class="download-btn download-btn--nav" href="https://github.com/marcwenz/clipdeck-landing/releases/latest/download/ClipDeck-mac.pkg" download="ClipDeck-mac.pkg" aria-label="Download Clip Deck for Mac">
           <svg class="download-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
             <path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.16-3.12.94-3.93.94-.81 0-2.06-.92-3.39-.89-1.74.03-3.35 1.01-4.25 2.57-1.81 3.14-.46 7.79 1.3 10.34.86 1.25 1.89 2.65 3.24 2.6 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.39.81 1.4-.03 2.28-1.27 3.13-2.53.99-1.45 1.4-2.85 1.42-2.92-.03-.01-2.72-1.04-2.75-4.13zM14.53 4.6c.72-.87 1.2-2.08 1.07-3.28-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.59 3.03-1.46z"/>
@@ -549,6 +550,64 @@
           </div>
           <div class="feat-pop" role="note">Share or back up entire libraries via portable .cdk files, cross-platform.</div>
         </article>
+      </div>
+    </section>
+
+    <!-- ===== Pricing — mirrors the in-app Clip Deck paywall "offer" view ===== -->
+    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
+      <h2 id="pricing-title" class="section-title">Clip Deck <span class="accent">Pricing</span></h2>
+      <div class="cdp-offer">
+        <div class="cdp-tiers">
+          <!-- Free tier -->
+          <div class="cdp-tier cdp-tier--free">
+            <div class="cdp-tier-name">Free</div>
+            <div class="cdp-tier-tagline">Free, forever.</div>
+            <div class="cdp-tier-price">
+              <span class="cdp-tier-price-amt">$0</span>
+              <span class="cdp-tier-price-unit">/ forever</span>
+            </div>
+            <ul class="cdp-tier-rows">
+              <li class="cdp-tier-row"><span class="cdp-tier-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>1 Deck</span></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>1 Library</span></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>40 Cards</span></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Full Customization</span></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="cdp-tier-core-title">Core features, including:</span></li>
+            </ul>
+            <div class="cdp-tier-core-sub">Insert video, audio &amp; images, drop timeline clips, save effects &amp; transitions, build decks of your favorite assets + more.</div>
+            <a class="cdp-btn cdp-tier-cta" href="https://github.com/marcwenz/clipdeck-landing/releases/latest/download/ClipDeck-mac.pkg" download="ClipDeck-mac.pkg" aria-label="Download Clip Deck Free for Mac">
+              Download
+              <svg class="cdp-dl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+            </a>
+          </div>
+
+          <!-- Pro tier -->
+          <div class="cdp-tier cdp-tier--pro">
+            <div class="cdp-tier-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div class="cdp-tier-name">Pro</div>
+            <div class="cdp-tier-tagline">Everything, unlimited.</div>
+            <div class="cdp-tier-price">
+              <span class="cdp-tier-price-amt">$99</span>
+              <span class="cdp-tier-price-unit">one-time · lifetime</span>
+            </div>
+            <ul class="cdp-tier-rows">
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--plus" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="cdp-tier-everything">Everything in Free</span></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Unlimited Decks</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Unlimited Decks</span>Create as many custom decks as you need for different projects, clients, or editing styles.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Unlimited Libraries</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Unlimited Libraries</span>Organize your clips, sound effects, overlays, transitions, memes, and assets without limits.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Unlimited Cards</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Unlimited Cards</span>Fill every deck with as many cards as you want — no 40-card cap.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Hotkey Navigation</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Hotkey Navigation</span>Switch between decks and libraries instantly using hotkeys. Summon Clip Deck directly to your favorite Library or Deck.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Pixabay &amp; YouTube Browsers</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Pixabay &amp; YouTube Browsers</span>Search free Pixabay stock assets and browse YouTube references — both right inside Clip Deck, no app-switching.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>2 Bonus Utility Plugins</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">2 Bonus Utility Plugins</span>Two extra INTHEZONE editing tools included with Pro — Smart Anchor &amp; Smart Paste.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Use on 2 Devices</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Use on 2 Devices</span>Activate Clip Deck Pro on up to 2 computers.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Export &amp; Import Libraries</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">Export &amp; Import Libraries</span>Back up your setup or move your libraries between devices.</div></li>
+              <li class="cdp-tier-row"><span class="cdp-tier-check cdp-tier-check--pro" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>30-Day Refund Policy</span><div class="cdp-tier-tip" role="tooltip"><span class="cdp-tier-tip-title">30-Day Refund Policy</span>Try it risk-free. No questions asked.</div></li>
+            </ul>
+            <a class="cdp-btn cdp-tier-cta" href="https://api.inthezone.studio/checkout/start" target="_blank" rel="noopener noreferrer" aria-label="Get Clip Deck Pro for $99">
+              Get Pro
+              <span class="cdp-price-tag">$99</span>
+              <svg class="cdp-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   </main>
