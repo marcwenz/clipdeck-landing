@@ -1928,7 +1928,7 @@ body.win-modal-open { overflow: hidden; }
   box-shadow: 0 0 16px rgba(0, 229, 142, 0.55);
 }
 .pricing .cdp-tier-badge svg { width: 17px; height: 17px; }
-.pricing .cdp-tier-name { font: 800 24px/1 var(--font-display); color: #fff; }
+.pricing .cdp-tier-name { margin: 0; font: 800 24px/1 var(--font-display); color: #fff; }
 .pricing .cdp-tier-tagline { margin-top: 6px; font: 400 15px/1.3 var(--font-sans); color: #8b9a93; }
 .pricing .cdp-tier-price { display: flex; align-items: baseline; gap: 8px; margin: 20px 0; }
 .pricing .cdp-tier-price-amt { font: 800 46px/1 var(--font-display); letter-spacing: -0.03em; color: #fff; }
@@ -1944,11 +1944,12 @@ body.win-modal-open { overflow: hidden; }
   transition: background .15s ease, box-shadow .15s ease;
 }
 .pricing .cdp-tier--free .cdp-tier-row { color: #97a59f; }
-.pricing .cdp-tier--pro .cdp-tier-row { cursor: default; }
-.pricing .cdp-tier--pro .cdp-tier-row:hover {
+.pricing .cdp-tier--pro .cdp-tier-row:hover,
+.pricing .cdp-tier--pro .cdp-tier-row:focus-visible {
   background: rgba(0, 229, 142, 0.10);
   box-shadow: 0 0 0 1px rgba(0, 229, 142, 0.22) inset;
   color: #eaf3ee;
+  outline: none;
 }
 .pricing .cdp-tier-check { flex: 0 0 auto; width: 20px; height: 20px; color: #556665; display: grid; place-items: center; margin-top: 1px; }
 .pricing .cdp-tier-check svg { width: 20px; height: 20px; display: block; }
@@ -1970,15 +1971,8 @@ body.win-modal-open { overflow: hidden; }
 }
 .pricing .cdp-tier-tip-title { display: block; font: 700 11px/1 var(--font-display); color: #00e58e; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
 .pricing .cdp-tier-tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: rgba(0, 229, 142, 0.32); }
-.pricing .cdp-tier--pro .cdp-tier-row:hover .cdp-tier-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-.pricing .cdp-tier-current {
-  margin-top: auto; align-self: flex-start;
-  padding: 10px 18px; border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  color: #8b9a93;
-  font: 600 14px/1 var(--font-sans);
-}
+.pricing .cdp-tier--pro .cdp-tier-row:hover .cdp-tier-tip,
+.pricing .cdp-tier--pro .cdp-tier-row:focus-visible .cdp-tier-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
 .pricing .cdp-tier-cta { margin-top: 28px; padding-top: 17px; padding-bottom: 17px; width: 100%; }
 
 /* CTA button */
