@@ -1,0 +1,9 @@
+# Cloudflare Pages headers.
+# Force the browser to revalidate CSS/JS on every load (via ETag) so a new
+# deploy never serves a stale stylesheet/script. "no-cache" still caches the
+# file — it just checks with the server first, getting a fast 304 when
+# unchanged. Prevents the "new HTML + old cached CSS" mismatch.
+/styles.css
+  Cache-Control: no-cache
+/script.js
+  Cache-Control: no-cache
