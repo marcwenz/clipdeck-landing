@@ -99,45 +99,105 @@ trackPageView();
   hookPanel();
 })();
 
-// ----- Windows (beta) install-guide modal --------------------
-// The Windows .exe isn't code-signed yet, so SmartScreen throws a "Windows
-// protected your PC" warning on first run. To set expectations, any link with
-// [data-win-trigger] opens a branded modal that walks the user through
-// "More info → Run anyway" before the download fires.
-//
-// The hero Windows button is still a real download anchor pointing at the
-// GitHub Release URL, so if this script fails to load the click just starts
-// the download directly (progressive enhancement — no broken state).
-(function windowsBetaModal() {
+// ----- Windows waitlist modal --------------------------------
+// The Windows build isn't out yet. The hero's Windows button
+// ([data-win-trigger]) opens a branded modal with an email signup instead of
+// a download. Submissions POST to the same Apps Script Web App as the pageview
+// ping, tagged type:"waitlist" so they land in the waitlist sheet.
+(function windowsWaitlistModal() {
   const modal = document.getElementById("win-modal");
   const triggers = document.querySelectorAll("[data-win-trigger]");
   if (!modal || !triggers.length) return;
 
+  const form    = modal.querySelector("[data-wl-form]");
+  const success = modal.querySelector("[data-wl-success]");
+  const input   = modal.querySelector("#wl-email");
+  const errorEl = modal.querySelector("#wl-error");
+  const submit  = modal.querySelector(".wl-submit");
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isLocal  = ["localhost", "127.0.0.1", ""].includes(location.hostname);
+
   let lastFocus = null;
+  // Background elements made inert while the modal is open — keeps focus and
+  // screen-reader navigation contained to the dialog (and the JS focus trap
+  // below cleanly cycles Tab for browsers that lack inert support).
+  const background = Array.prototype.filter.call(
+    document.body.children,
+    (el) => el !== modal && el.tagName !== "SCRIPT"
+  );
+
+  function getFocusable() {
+    return Array.prototype.filter.call(
+      modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+      (el) => el.offsetParent !== null
+    );
+  }
+
+  function resetForm() {
+    if (form)    form.hidden = false;
+    if (success) success.hidden = true;
+    if (errorEl) errorEl.textContent = "";
+    if (input)   { input.value = ""; input.classList.remove("is-invalid"); }
+    if (submit)  submit.disabled = false;
+  }
 
   function open(triggerEl) {
     lastFocus = triggerEl;
+    resetForm();
     modal.hidden = false;
     document.body.classList.add("win-modal-open");
-    // Hand focus to the first interactive element inside the panel so keyboard
-    // users land somewhere sensible. We pick the panel itself first so screen
-    // readers announce the dialog before reading the trigger button label.
-    const focusables = modal.querySelectorAll(
-      'button, [href], [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusables.length) focusables[0].focus();
+    background.forEach((el) => { el.inert = true; });
+    if (input) input.focus();
+    document.removeEventListener("keydown", onKeydown); // guard against duplicates
     document.addEventListener("keydown", onKeydown);
   }
 
   function close() {
     modal.hidden = true;
     document.body.classList.remove("win-modal-open");
+    background.forEach((el) => { el.inert = false; });
     document.removeEventListener("keydown", onKeydown);
     if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
   }
 
   function onKeydown(e) {
-    if (e.key === "Escape") { e.preventDefault(); close(); }
+    if (e.key === "Escape") { e.preventDefault(); close(); return; }
+    if (e.key === "Tab") {
+      const f = getFocusable();
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+
+  function showError(msg) {
+    // role="alert" on #wl-error announces the text; .wl-error:empty hides it
+    // when cleared, so setting/clearing textContent is all that's needed.
+    if (errorEl) errorEl.textContent = msg;
+    if (input)   { input.classList.add("is-invalid"); input.focus(); }
+  }
+
+  // Best-effort, no-cors (the response can't be read). Skip the network call
+  // on localhost so dev testing doesn't add rows to the live sheet.
+  function send(email) {
+    if (isLocal || !APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("REPLACE_WITH")) return;
+    const payload = JSON.stringify({
+      type: "waitlist",
+      email: email,
+      ts: new Date().toISOString(),
+      ua: navigator.userAgent,
+      ref: document.referrer || ""
+    });
+    const blob = new Blob([payload], { type: "text/plain;charset=utf-8" });
+    // sendBeacon returns false if it couldn't queue the request — fall back to fetch.
+    if (navigator.sendBeacon && navigator.sendBeacon(APPS_SCRIPT_URL, blob)) return;
+    fetch(APPS_SCRIPT_URL, {
+      method: "POST", mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: payload, keepalive: true
+    }).catch(() => {});
   }
 
   triggers.forEach((btn) => {
@@ -147,17 +207,35 @@ trackPageView();
     });
   });
 
-  // Close on backdrop / X / Cancel — anything tagged [data-win-close].
+  // Close on backdrop / X — anything tagged [data-win-close].
   modal.addEventListener("click", (e) => {
     if (e.target.closest("[data-win-close]")) close();
   });
 
-  // Confirm button is the real download link; let the browser handle the
-  // navigation, then quietly close the modal a beat later.
-  const confirmBtn = modal.querySelector("[data-win-confirm]");
-  if (confirmBtn) {
-    confirmBtn.addEventListener("click", () => {
-      setTimeout(close, 250);
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = ((input && input.value) || "").trim();
+      if (!EMAIL_RE.test(email)) {
+        showError("Please enter a valid email address.");
+        return;
+      }
+      if (errorEl) errorEl.textContent = "";
+      if (input)   input.classList.remove("is-invalid");
+      if (submit)  submit.disabled = true;
+      send(email);
+      // Optimistic success — the no-cors POST can't be confirmed client-side.
+      // Move focus to the success block (role="status") so it's announced.
+      if (form)    form.hidden = true;
+      if (success) { success.hidden = false; success.focus(); }
+    });
+  }
+
+  // Clear the invalid state as the user corrects their email.
+  if (input) {
+    input.addEventListener("input", () => {
+      input.classList.remove("is-invalid");
+      if (errorEl) errorEl.textContent = "";
     });
   }
 })();

@@ -69,12 +69,12 @@
           </svg>
           <span class="download-text">Download for Mac</span>
         </a>
-        <a class="download-btn" href="https://github.com/marcwenz/clipdeck-landing/releases/latest/download/ClipDeck-win.exe" download="ClipDeck-win.exe" aria-label="Download Clip Deck for Windows (beta)" data-win-trigger>
+        <button class="download-btn" type="button" aria-label="Windows version coming soon — join the waitlist" data-win-trigger>
           <svg class="download-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
             <path d="M0 3.449 9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.351"/>
           </svg>
-          <span class="download-text">Download for Windows (beta)</span>
-        </a>
+          <span class="download-text">Windows (Coming Soon)</span>
+        </button>
       </div>
     </section>
 
@@ -572,43 +572,42 @@
     </div>
   </footer>
 
-  <!-- ===== Windows (beta) install-guide modal =====
-       Fires when any [data-win-trigger] link is clicked. JS intercepts and shows
-       this dialog so the user is prepared for the SmartScreen warning before
-       the .exe lands. The inline anchor inside is the actual download link —
-       if JS fails to load, clicking the hero Windows button just downloads
-       directly (graceful fallback). -->
+  <!-- ===== Windows waitlist modal =====
+       The Windows build isn't out yet. Clicking the hero's Windows button
+       ([data-win-trigger]) opens this branded modal with an email signup
+       instead of a download. Submissions POST to the same Apps Script as the
+       pageview ping, tagged type:"waitlist". JS handles open/close + submit;
+       with JS off the button is an inert <button> (no broken download link). -->
   <div class="win-modal" id="win-modal" role="dialog" aria-modal="true" aria-labelledby="win-modal-title" hidden>
     <div class="win-modal__backdrop" data-win-close aria-hidden="true"></div>
     <div class="win-modal__panel" role="document">
-      <button class="win-modal__close" type="button" aria-label="Close install guide" data-win-close>
+      <button class="win-modal__close" type="button" aria-label="Close waitlist signup" data-win-close>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
 
       <div class="win-modal__head">
-        <span class="win-modal__badge">BETA</span>
-        <h2 id="win-modal-title" class="win-modal__title">Heads up — Windows is in <span class="accent">beta</span></h2>
+        <span class="win-modal__badge">Coming Soon</span>
+        <h2 id="win-modal-title" class="win-modal__title">Windows version <span class="accent">coming soon</span></h2>
+        <p class="win-modal__intro">We're putting the finishing touches on the Windows build. Drop your email and we'll send you the download link the moment it's ready.</p>
       </div>
 
-      <p class="win-modal__intro">The installer isn't yet code-signed, so Windows will show a "Windows protected your PC" warning when you run it. That's expected — here's how to get past it:</p>
+      <form class="wl-form" data-wl-form novalidate>
+        <label class="wl-label" for="wl-email">Email address</label>
+        <div class="wl-row">
+          <input class="wl-input" id="wl-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required aria-describedby="wl-error">
+          <button class="download-btn wl-submit" type="submit">
+            <span class="download-text">Join waitlist</span>
+          </button>
+        </div>
+        <p class="wl-error" id="wl-error" role="alert"></p>
+      </form>
 
-      <figure class="win-modal__figure">
-        <img src="assets/win-smartscreen-guide.png" alt="Windows SmartScreen warning dialog with a red arrow pointing at the 'More info' link" width="534" height="500" loading="lazy">
-      </figure>
-
-      <ol class="win-modal__steps">
-        <li>When the SmartScreen warning appears, click <strong>More info</strong>.</li>
-        <li>A <strong>Run anyway</strong> button will appear — click it to install.</li>
-        <li>If the warning closed or you clicked <strong>Don't run</strong>, just open the installer again and repeat.</li>
-      </ol>
-
-      <div class="win-modal__actions">
-        <a class="download-btn win-modal__download" href="https://github.com/marcwenz/clipdeck-landing/releases/latest/download/ClipDeck-win.exe" download="ClipDeck-win.exe" data-win-confirm aria-label="Continue and download Clip Deck for Windows (beta)">
-          <svg class="download-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
-            <path d="M0 3.449 9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.351"/>
-          </svg>
-          <span class="download-text">Download for Windows (beta)</span>
-        </a>
+      <div class="wl-success" data-wl-success role="status" tabindex="-1" hidden>
+        <span class="wl-success__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <h3 class="wl-success__title">You're on the list!</h3>
+        <p class="wl-success__text">We'll email you the moment the Windows version is ready.</p>
       </div>
     </div>
   </div>

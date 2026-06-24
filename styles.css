@@ -1075,6 +1075,9 @@ ul { list-style: none; padding: 0; margin: 0; }
   align-items: center;
   justify-content: center;
   gap: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
   background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent-deep) 100%);
   color: var(--accent-dark);
   border: 1px solid rgba(0, 0, 0, 0.4);
@@ -1637,7 +1640,7 @@ ul { list-style: none; padding: 0; margin: 0; }
 .win-modal__panel {
   position: relative;
   z-index: 1;
-  width: min(780px, 100%);
+  width: min(480px, 100%);
   max-height: calc(100vh - 2 * var(--space-4));
   overflow-y: auto;
   background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
@@ -1647,23 +1650,15 @@ ul { list-style: none; padding: 0; margin: 0; }
     0 24px 60px rgba(0, 0, 0, 0.7),
     0 0 32px -6px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  padding: var(--space-6) var(--space-8);
+  padding: var(--space-8);
   color: var(--text-body);
-  text-align: left;
+  text-align: center;
   animation: win-modal-panel-in 0.28s var(--ease-pop);
 
-  /* Landscape layout: head + intro span full width; the screenshot sits next
-     to the numbered steps; actions span the full width again. Keeps the
-     whole prompt inside one viewport on typical laptop screens. */
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  grid-template-areas:
-    "head    head"
-    "intro   intro"
-    "figure  steps"
-    "actions actions";
-  gap: var(--space-4) var(--space-6);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
 }
 
 .win-modal__close {
@@ -1695,13 +1690,11 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 
 .win-modal__head {
-  grid-area: head;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  padding-right: var(--space-8); /* keep heading clear of close button */
-  padding-left: var(--space-8);
+  padding: 0 var(--space-5); /* keep heading clear of the close button */
 }
 
 .win-modal__badge {
@@ -1736,85 +1729,114 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 
 .win-modal__intro {
-  grid-area: intro;
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.55;
   color: var(--text-muted);
-  text-align: center;
+  max-width: 40ch;
 }
 
-.win-modal__figure {
-  grid-area: figure;
-  margin: 0;
-  border: 1px solid var(--line-2);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: #0a0c10;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-  align-self: start;
-}
-.win-modal__figure img {
-  display: block;
+/* ---- Waitlist form ---- */
+.wl-form {
   width: 100%;
-  height: auto;
-}
-
-.win-modal__steps {
-  grid-area: steps;
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-  counter-reset: win-step;
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+  text-align: left;
+}
+.wl-form[hidden] { display: none; }
+
+.wl-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+}
+
+.wl-row {
+  display: flex;
   gap: var(--space-3);
-  align-self: start;
+  align-items: stretch;
 }
-.win-modal__steps li {
-  position: relative;
-  padding-left: 40px;
+
+.wl-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-family: var(--font-sans);
   font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--text-body);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
-.win-modal__steps li::before {
-  counter-increment: win-step;
-  content: counter(win-step);
-  position: absolute;
-  left: 0;
-  top: -2px;
-  width: 28px;
-  height: 28px;
+.wl-input::placeholder { color: var(--text-muted); }
+.wl-input:focus {
+  outline: none;
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px rgba(0, 229, 142, 0.14);
+}
+.wl-input.is-invalid {
+  border-color: rgba(255, 99, 99, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 99, 99, 0.14);
+}
+
+.wl-submit { flex: 0 0 auto; }
+.wl-submit[disabled] { opacity: 0.6; cursor: default; }
+
+.wl-error {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #ff8a8a;
+}
+.wl-error:empty { display: none; }
+
+/* ---- Success state ---- */
+.wl-success {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  animation: wl-fade 0.25s var(--ease-out);
+}
+.wl-success[hidden] { display: none; }
+.wl-success:focus { outline: none; }
+@keyframes wl-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.wl-success__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-tint);
-  border: 1px solid var(--accent-line);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  box-shadow: 0 0 22px -4px var(--accent-glow);
 }
-.win-modal__steps strong {
-  color: var(--accent);
-  font-weight: 700;
+.wl-success__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
-
-.win-modal__actions {
-  grid-area: actions;
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-3);
-  align-items: center;
-  justify-content: center;
-  margin-top: var(--space-2);
-}
-
-.win-modal__download {
-  flex: 1 1 auto;
-  justify-content: center;
+.wl-success__text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 34ch;
 }
 
 @keyframes win-modal-in {
@@ -1830,22 +1852,13 @@ ul { list-style: none; padding: 0; margin: 0; }
 body.win-modal-open { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
-  .win-modal, .win-modal__panel { animation: none; }
+  .win-modal, .win-modal__panel, .wl-success { animation: none; }
 }
 
 @media (max-width: 640px) {
-  .win-modal__panel {
-    padding: var(--space-6) var(--space-5);
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "head"
-      "intro"
-      "figure"
-      "steps"
-      "actions";
-    gap: var(--space-4);
-  }
+  .win-modal__panel { padding: var(--space-6) var(--space-5); gap: var(--space-4); }
   .win-modal__head { padding-left: 0; padding-right: 0; }
   .win-modal__title { font-size: 1.25rem; }
-  .win-modal__actions { flex-direction: column; align-items: stretch; }
+  .wl-row { flex-direction: column; }
+  .wl-submit { width: 100%; }
 }
