@@ -53,6 +53,37 @@ function trackPageView() {
 
 trackPageView();
 
+// ----- Mobile nav dropdown -----------------------------------
+// Below 820px the nav links collapse behind a hamburger (see the media query
+// in styles.css). The button owns aria-expanded; CSS keys both the open/close
+// icon swap and the panel's visibility off it + the .is-open class.
+(function navDropdown() {
+  const btn = document.querySelector(".nav-toggle");
+  const nav = document.getElementById("site-nav");
+  if (!btn || !nav) return;
+
+  function setOpen(open) {
+    nav.classList.toggle("is-open", open);
+    btn.setAttribute("aria-expanded", String(open));
+    btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  }
+
+  btn.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+
+  // Tapping a link navigates to the section — close behind it.
+  nav.addEventListener("click", (e) => { if (e.target.closest("a")) setOpen(false); });
+
+  // Escape closes; clicking outside the header closes.
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+  document.addEventListener("click", (e) => {
+    if (!nav.classList.contains("is-open")) return;
+    if (!e.target.closest(".site-header")) setOpen(false);
+  });
+
+  // Reset state if the viewport grows back to the desktop layout.
+  addEventListener("resize", () => { if (innerWidth > 820) setOpen(false); });
+})();
+
 // ----- Smooth scrolling over the interactive panel preview -------
 // The hero's interactive panel is a same-origin <iframe>. When the cursor is
 // over it, the browser delivers wheel events to the iframe instead of the
